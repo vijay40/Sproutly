@@ -1,7 +1,9 @@
+import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AppMode, getMode } from '../src/lib/mode';
+import { consumeAuthSessionFromUrl, getParentClient } from '../src/lib/supabase';
 
 export default function RootLayout() {
   const [mode, setMode] = useState<AppMode | null | 'loading'>('loading');
@@ -9,7 +11,25 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => {
-    getMode().then((m) => setMode(m));
+    const { data: sub } = getParentClient().auth.onAuthStateChange(async (_event, session) => {
+      if (session && (await getMode()) === null) {
+        // Parent just signed in for the first time — mode is committed after onboarding (Task 5).
+      }
+    });
+
+    const linkSub = Linking.addEventListener('url', ({ url }) => {
+      void consumeAuthSessionFromUrl(url);
+    });
+
+    void (async () => {
+      await consumeAuthSessionFromUrl(await Linking.getInitialURL());
+      getMode().then(setMode);
+    })();
+
+    return () => {
+      sub.subscription.unsubscribe();
+      linkSub.remove();
+    };
   }, []);
 
   useEffect(() => {
