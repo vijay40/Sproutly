@@ -13,7 +13,7 @@ export default function RootLayout() {
   useEffect(() => {
     const { data: sub } = getParentClient().auth.onAuthStateChange(async (_event, session) => {
       if (session && (await getMode()) === null) {
-        // Parent just signed in for the first time — mode is committed after onboarding (Task 5).
+        // Mode is committed after onboarding (this screen).
       }
     });
 
@@ -34,14 +34,23 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (mode === 'loading') return;
-    const inGroup = segments[0];
-    if (mode === null && inGroup !== '(first-launch)') {
-      router.replace('/(first-launch)');
-    } else if (mode === 'parent' && inGroup !== '(parent)') {
-      router.replace('/(parent)/today');
-    } else if (mode === 'kid' && inGroup !== '(kid)') {
-      router.replace('/(kid)/display');
-    }
+    let cancelled = false;
+    void (async () => {
+      const stored = await getMode();
+      if (cancelled) return;
+      setMode(stored);
+      const inGroup = segments[0];
+      if (stored === null && inGroup !== '(first-launch)') {
+        router.replace('/(first-launch)');
+      } else if (stored === 'parent' && inGroup !== '(parent)') {
+        router.replace('/(parent)/today');
+      } else if (stored === 'kid' && inGroup !== '(kid)') {
+        router.replace('/(kid)/display');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [mode, segments, router]);
 
   if (mode === 'loading') {
