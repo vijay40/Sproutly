@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Button, Text, TextInput, View } from 'react-native';
+import { getAuthEmailRedirectTo } from '../../src/lib/authRedirect';
 import { getParentClient } from '../../src/lib/supabase';
 
 export default function ParentAuth() {
@@ -13,7 +14,7 @@ export default function ParentAuth() {
     setLoading(true);
     const { error } = await getParentClient().auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: 'sproutly://auth-callback' },
+      options: { emailRedirectTo: getAuthEmailRedirectTo() },
     });
     setLoading(false);
     if (error) {
