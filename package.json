@@ -15,7 +15,6 @@
     "@supabase/supabase-js": "^2.105.1",
     "dayjs": "^1.11.20",
     "expo": "~54.0.33",
-    "expo-auth-session": "^55.0.15",
     "expo-constants": "~18.0.13",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.23",
