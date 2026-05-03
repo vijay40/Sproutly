@@ -13,7 +13,7 @@ export default function RootLayout() {
   useEffect(() => {
     const { data: sub } = getParentClient().auth.onAuthStateChange(async (_event, session) => {
       if (session && (await getMode()) === null) {
-        // Mode is committed after onboarding (this screen).
+        // Mode is committed after onboarding (parent-onboarding).
       }
     });
 
