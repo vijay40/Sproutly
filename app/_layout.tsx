@@ -38,7 +38,10 @@ export default function RootLayout() {
     void (async () => {
       const stored = await getMode();
       if (cancelled) return;
-      setMode(stored);
+      if (stored !== mode) {
+        setMode(stored);
+        return;
+      }
       const inGroup = segments[0];
       if (stored === null && inGroup !== '(first-launch)') {
         router.replace('/(first-launch)');

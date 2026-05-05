@@ -48,7 +48,7 @@ async function redeemPairingCode(pairing_code: string) {
     .limit(1);
 
   if (error) {
-    console.error('[pairing-server] kid_devices select error', error.message);
+    console.error('[server] kid_devices select error', error.message);
     return { status: 500 as const, body: 'DB error' };
   }
 
@@ -87,7 +87,7 @@ async function redeemPairingCode(pairing_code: string) {
     .eq('id', row.id);
 
   if (uErr) {
-    console.error('[pairing-server] kid_devices update error', uErr.message);
+    console.error('[server] kid_devices update error', uErr.message);
     return { status: 500 as const, body: 'DB error' };
   }
 
@@ -111,7 +111,7 @@ function main() {
   });
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[pairing-server] listening on http://0.0.0.0:${PORT}`);
+    console.log(`[server] listening on http://0.0.0.0:${PORT}`);
   });
 }
 
