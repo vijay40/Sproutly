@@ -8,7 +8,10 @@ import { consumeAuthSessionFromUrl, getParentClient } from '../../src/lib/supaba
 WebBrowser.maybeCompleteAuthSession();
 
 function getOAuthRedirectUrl(): string {
-  return Linking.createURL('auth-callback', { scheme: 'sproutly' });
+  // Let Expo pick the scheme at runtime:
+  //   Expo Go → exp://<LAN>:8081/--/auth-callback
+  //   Dev/prod build → sproutly://auth-callback (from app.json scheme)
+  return Linking.createURL('auth-callback');
 }
 
 export default function ParentAuth() {
@@ -18,12 +21,19 @@ export default function ParentAuth() {
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    getParentClient()
-      .auth.getSession()
+    const supabase = getParentClient();
+    void supabase.auth
+      .getSession()
       .then(({ data }) => {
         setHasSession(!!data.session);
       })
       .finally(() => setBooting(false));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
@@ -69,13 +79,19 @@ export default function ParentAuth() {
 
   return (
     <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16 }}>
-      <Text style={{ fontSize: 22 }}>Sign in</Text>
-      <Text>Continue with your Google account.</Text>
-      <Button
-        title={busy ? 'Opening browser…' : 'Continue with Google'}
-        onPress={signInWithGoogle}
-        disabled={busy}
-      />
+      <Text style={{ fontSize: 22 }}>{hasSession ? 'Signed in' : 'Sign in'}</Text>
+      {hasSession ? (
+        <Text>Signed in with Google. Continue to set up your family.</Text>
+      ) : (
+        <Text>Continue with your Google account.</Text>
+      )}
+      {!hasSession ? (
+        <Button
+          title={busy ? 'Opening browser…' : 'Continue with Google'}
+          onPress={signInWithGoogle}
+          disabled={busy}
+        />
+      ) : null}
       {hasSession ? (
         <Button title="Continue to setup" onPress={() => router.replace('/(first-launch)/parent-onboarding')} />
       ) : null}

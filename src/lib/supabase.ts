@@ -1,10 +1,22 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getKidToken } from './secureStore';
 
 const URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+
+if (
+  __DEV__ &&
+  Constants.isDevice &&
+  URL &&
+  (URL.includes('127.0.0.1') || URL.includes('localhost'))
+) {
+  console.warn(
+    '[Sproutly] Supabase URL targets this device, not your dev machine. Use your Mac/PC LAN IP in .env.local (physical device) or http://10.0.2.2:54321 (Android emulator). See .env.example.',
+  );
+}
 
 let parentClient: SupabaseClient | null = null;
 let kidClient: SupabaseClient | null = null;

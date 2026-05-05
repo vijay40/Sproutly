@@ -42,8 +42,16 @@ export default function RootLayout() {
       const inGroup = segments[0];
       if (stored === null && inGroup !== '(first-launch)') {
         router.replace('/(first-launch)');
-      } else if (stored === 'parent' && inGroup !== '(parent)') {
-        router.replace('/(parent)/today');
+      } else if (stored === 'parent') {
+        const { data: family } = await getParentClient().from('families').select('id').limit(1);
+        if (cancelled) return;
+        if (!family?.length) {
+          router.replace('/(first-launch)/parent-onboarding');
+          return;
+        }
+        if (inGroup !== '(parent)') {
+          router.replace('/(parent)/today');
+        }
       } else if (stored === 'kid' && inGroup !== '(kid)') {
         router.replace('/(kid)/display');
       }

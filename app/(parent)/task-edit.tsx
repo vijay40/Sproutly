@@ -8,6 +8,43 @@ const CATEGORIES: Category[] = ['routine', 'chore', 'behavior'];
 const SLOTS: TimeSlot[] = ['morning', 'afternoon', 'evening'];
 const RECURRENCES: Recurrence[] = ['daily', 'weekdays', 'custom', 'one_time'];
 
+function Row({ label, content }: { label: string; content: ReactNode }) {
+  return (
+    <View style={{ marginVertical: 8 }}>
+      <Text style={{ fontWeight: '600' }}>{label}</Text>
+      {content}
+    </View>
+  );
+}
+
+function Pill({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: active ? '#333' : '#ccc',
+        backgroundColor: active ? '#333' : 'transparent',
+        borderRadius: 999,
+        marginRight: 6,
+        marginBottom: 6,
+      }}
+    >
+      <Text style={{ color: active ? 'white' : '#333' }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export default function TaskEdit() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -23,6 +60,7 @@ export default function TaskEdit() {
   const [days, setDays] = useState<number[]>([]);
   const [isBonus, setIsBonus] = useState(false);
   const [childId, setChildId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -45,10 +83,12 @@ export default function TaskEdit() {
   }, [id, editing]);
 
   async function save() {
+    if (saving) return;
     if (!title.trim() || !childId) {
       Alert.alert('Missing info', 'Title and child are required.');
       return;
     }
+    setSaving(true);
     const supabase = getParentClient();
     const payload: Partial<TaskRow> = {
       title: title.trim(),
@@ -62,7 +102,10 @@ export default function TaskEdit() {
     };
     if (editing && id) {
       const { error } = await supabase.from('tasks').update(payload).eq('id', id);
-      if (error) return Alert.alert('Error', error.message);
+      if (error) {
+        setSaving(false);
+        return Alert.alert('Error', error.message);
+      }
     } else {
       const { error } = await supabase.from('tasks').insert({
         ...payload,
@@ -70,8 +113,12 @@ export default function TaskEdit() {
         is_active: true,
         bonus_cosmetic_id: null,
       });
-      if (error) return Alert.alert('Error', error.message);
+      if (error) {
+        setSaving(false);
+        return Alert.alert('Error', error.message);
+      }
     }
+    setSaving(false);
     router.back();
   }
 
@@ -91,39 +138,6 @@ export default function TaskEdit() {
       },
     ]);
   }
-
-  const Row = ({ label, content }: { label: string; content: ReactNode }) => (
-    <View style={{ marginVertical: 8 }}>
-      <Text style={{ fontWeight: '600' }}>{label}</Text>
-      {content}
-    </View>
-  );
-
-  const Pill = ({
-    active,
-    label,
-    onPress,
-  }: {
-    active: boolean;
-    label: string;
-    onPress: () => void;
-  }) => (
-    <Pressable
-      onPress={onPress}
-      style={{
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderWidth: 1,
-        borderColor: active ? '#333' : '#ccc',
-        backgroundColor: active ? '#333' : 'transparent',
-        borderRadius: 999,
-        marginRight: 6,
-        marginBottom: 6,
-      }}
-    >
-      <Text style={{ color: active ? 'white' : '#333' }}>{label}</Text>
-    </Pressable>
-  );
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -218,7 +232,11 @@ export default function TaskEdit() {
         }
       />
       <View style={{ height: 16 }} />
-      <Button title={editing ? 'Save' : 'Create'} onPress={() => void save()} />
+      <Button
+        title={saving ? 'Saving…' : editing ? 'Save' : 'Create'}
+        onPress={() => void save()}
+        disabled={saving || !title.trim() || !childId}
+      />
       {editing && (
         <>
           <View style={{ height: 8 }} />
