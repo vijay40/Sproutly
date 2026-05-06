@@ -7,3 +7,4 @@ export * from './InputField';
 export * from './SlotLabel';
 export * from './CodeEntry';
 export * from './InsightCard';
+export * from './TaskRow';

@@ -1,4 +1,4 @@
-import { View, ViewStyle, StyleSheet } from 'react-native';
+import { View, ViewStyle, StyleSheet, StyleProp } from 'react-native';
 import { ReactNode } from 'react';
 import { colors, radii, spacing } from '../theme/tokens';
 
@@ -7,7 +7,7 @@ type Variant = 'default' | 'insight' | 'bonus' | 'completed' | 'screen';
 interface Props {
   variant?: Variant;
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Card({ variant = 'default', children, style }: Props) {
