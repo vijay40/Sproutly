@@ -86,3 +86,4 @@ supabase/.branches/
 supabase/.temp/
 supabase/functions/.env
 server/.env
+.superpowers/
