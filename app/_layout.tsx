@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AppMode, getMode } from '../src/lib/mode';
 import { consumeAuthSessionFromUrl, getParentClient } from '../src/lib/supabase';
+import { useAppFonts } from '../src/fonts';
 
 export default function RootLayout() {
+  const fontsLoaded = useAppFonts();
   const [mode, setMode] = useState<AppMode | null | 'loading'>('loading');
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    const { data: sub } = getParentClient().auth.onAuthStateChange(async (_event, session) => {
-      if (session && (await getMode()) === null) {
-        // Mode is committed after onboarding (parent-onboarding).
-      }
+    const { data: sub } = getParentClient().auth.onAuthStateChange(async () => {
+      // Mode is committed after onboarding (parent-onboarding).
     });
 
     const linkSub = Linking.addEventListener('url', ({ url }) => {
@@ -64,13 +64,13 @@ export default function RootLayout() {
     };
   }, [mode, segments, router]);
 
-  if (mode === 'loading') {
+  if (!fontsLoaded || mode === 'loading') {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' }}>
         <ActivityIndicator />
       </View>
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }} />;
 }
