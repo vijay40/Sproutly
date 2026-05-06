@@ -2,3 +2,6 @@ export * from './Text';
 export * from './Button';
 export * from './Card';
 export * from './PillGroup';
+export * from './Toggle';
+export * from './InputField';
+export * from './SlotLabel';
