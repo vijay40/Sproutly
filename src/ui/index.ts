@@ -6,3 +6,4 @@ export * from './Toggle';
 export * from './InputField';
 export * from './SlotLabel';
 export * from './CodeEntry';
+export * from './InsightCard';
