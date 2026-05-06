@@ -1,10 +1,18 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { saveKidAuth } from '../../src/lib/secureStore';
 import { setMode } from '../../src/lib/mode';
 import { resetClients } from '../../src/lib/supabase';
 import { getPairingRedeemUrl } from '../../src/lib/server';
+import { tapLight, tapSuccess } from '../../src/lib/haptics';
+import {
+  Caption,
+  CodeEntry,
+  HeadingLg,
+  Text,
+} from '../../src/ui';
+import { colors, radii, spacing } from '../../src/theme/tokens';
 
 export default function KidPair() {
   const [code, setCode] = useState('');
@@ -12,15 +20,12 @@ export default function KidPair() {
   const router = useRouter();
 
   async function redeem() {
-    if (!/^\d{6}$/.test(code)) {
-      Alert.alert('Enter a 6-digit code');
-      return;
-    }
+    if (!/^\d{6}$/.test(code)) return;
     setLoading(true);
     let url: string;
     try {
       url = getPairingRedeemUrl();
-    } catch (e: unknown) {
+    } catch {
       setLoading(false);
       Alert.alert(
         'Pairing not configured',
@@ -43,6 +48,7 @@ export default function KidPair() {
       await saveKidAuth(token, child_id);
       await setMode('kid');
       resetClients();
+      tapSuccess();
       router.replace('/(kid)/display');
     } finally {
       setLoading(false);
@@ -50,29 +56,49 @@ export default function KidPair() {
   }
 
   return (
-    <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 12 }}>
-      <Text style={{ fontSize: 22 }}>Pair this iPad</Text>
-      <Text>Enter the 6-digit code shown on the parent phone.</Text>
-      <TextInput
+    <View style={{ flex: 1, backgroundColor: colors.white, padding: spacing.wide, paddingTop: spacing.section }}>
+      <Pressable onPress={() => router.back()} style={{ width: 30, height: 30, marginBottom: spacing.wide }} accessibilityLabel="Back">
+        <Text style={{ color: colors.muted, fontSize: 22, lineHeight: 24 }}>‹</Text>
+      </Pressable>
+
+      <View style={{ alignItems: 'center', marginBottom: spacing.section }}>
+        <View
+          style={{
+            width: 72, height: 72, borderRadius: 36,
+            backgroundColor: colors.sky,
+            alignItems: 'center', justifyContent: 'center',
+            marginBottom: spacing.md,
+          }}
+        >
+          <Text style={{ fontSize: 32 }}>📟</Text>
+        </View>
+        <HeadingLg style={{ textAlign: 'center' }}>Pair this iPad</HeadingLg>
+        <Caption style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 280 }}>
+          Enter the 6-digit code from the parent's phone (Settings → Pair iPad).
+        </Caption>
+      </View>
+
+      <CodeEntry
         value={code}
-        onChangeText={(v) => setCode(v.replace(/[^0-9]/g, '').slice(0, 6))}
-        keyboardType="number-pad"
-        maxLength={6}
+        onChange={(v) => { tapLight(); setCode(v); }}
+        onSubmit={() => void redeem()}
+      />
+      <Caption style={{ textAlign: 'center', marginTop: spacing.md }}>
+        {loading ? 'Pairing…' : 'Codes expire after 10 minutes.'}
+      </Caption>
+
+      <View style={{ flex: 1 }} />
+
+      <View
         style={{
-          borderWidth: 1,
-          borderColor: '#ccc',
-          padding: 12,
-          fontSize: 32,
-          letterSpacing: 6,
-          textAlign: 'center',
-          borderRadius: 8,
+          backgroundColor: colors.gray50,
+          borderRadius: radii.card,
+          padding: spacing.md,
+          alignItems: 'center',
         }}
-      />
-      <Button
-        title={loading ? 'Pairing…' : 'Pair'}
-        onPress={() => void redeem()}
-        disabled={loading || code.length !== 6}
-      />
+      >
+        <Caption>Enter 6-digit code above</Caption>
+      </View>
     </View>
   );
 }
