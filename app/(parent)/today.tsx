@@ -1,63 +1,219 @@
-import { useCallback, useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ScrollView, View, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { todayLocalDate } from '../../src/lib/time';
 import { isTaskScheduledOn } from '../../src/domain/tasks';
-import type { TaskRow, FamilyRow } from '../../src/types/db';
+import { tapLight, tapSuccess } from '../../src/lib/haptics';
+import type { ChildRow, FamilyRow, TaskCompletionRow, TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
+import {
+  Body,
+  Caption,
+  Display,
+  InsightCard,
+  Label,
+  PrimaryButton,
+  SlotLabel,
+  TaskRow,
+  Text,
+} from '../../src/ui';
+import { colors, spacing } from '../../src/theme/tokens';
+
+type AiInsightRow = {
+  id: string;
+  insight_text: string;
+  is_applied: boolean;
+  is_dismissed: boolean;
+};
+
+const SLOTS: TimeSlot[] = ['morning', 'afternoon', 'evening'];
+
+function formatTopDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d
+    .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+    .toUpperCase();
+}
+
+function recurrenceLabel(t: TaskRowType): string {
+  switch (t.recurrence) {
+    case 'daily': return 'Daily';
+    case 'weekdays': return 'Weekdays';
+    case 'one_time': return 'Once';
+    case 'custom': {
+      const short = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return (t.recurrence_days ?? []).map((d) => short[d]).join(', ');
+    }
+  }
+}
 
 export default function Today() {
-  const [rows, setRows] = useState<{ task: TaskRow; completed: boolean }[]>([]);
-  const [tz, setTz] = useState<string>('UTC');
+  const [family, setFamily] = useState<FamilyRow | null>(null);
+  const [child, setChild] = useState<ChildRow | null>(null);
+  const [tasks, setTasks] = useState<TaskRowType[]>([]);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [insight, setInsight] = useState<AiInsightRow | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      void (async () => {
-        const supabase = getParentClient();
-        const { data: family, error } = await supabase.from('families').select('*').single();
-        if (error || !family) {
-          setRows([]);
-          setTz('UTC');
-          return;
-        }
-        const fam = family as FamilyRow;
-        setTz(fam.timezone);
+  const load = useCallback(async () => {
+    const sb = getParentClient();
+    const [{ data: fam }, { data: ch }, { data: ts }] = await Promise.all([
+      sb.from('families').select('*').single(),
+      sb.from('children').select('*').single(),
+      sb.from('tasks').select('*').eq('is_active', true),
+    ]);
+    setFamily((fam as FamilyRow | null) ?? null);
+    setChild((ch as ChildRow | null) ?? null);
+    setTasks(((ts ?? []) as TaskRowType[]));
 
-        const { data: tasks } = await supabase.from('tasks').select('*').eq('is_active', true);
-        const now = new Date();
-        const today = todayLocalDate(fam.timezone, now);
-        const todayTasks = (tasks ?? []).filter(
-          (t) => !t.is_bonus && isTaskScheduledOn(t as TaskRow, now, fam.timezone)
-        ) as TaskRow[];
+    if (fam) {
+      const today = todayLocalDate((fam as FamilyRow).timezone);
+      const { data: comps } = await sb
+        .from('task_completions')
+        .select('task_id')
+        .eq('local_date', today);
+      setCompletedIds(new Set(((comps ?? []) as Pick<TaskCompletionRow, 'task_id'>[]).map((c) => c.task_id)));
+    }
 
-        const { data: completions } = await supabase
-          .from('task_completions')
-          .select('task_id')
-          .eq('local_date', today);
-        const doneIds = new Set((completions ?? []).map((c) => c.task_id));
+    const { data: ins } = await sb
+      .from('ai_insights')
+      .select('id, insight_text, is_applied, is_dismissed')
+      .eq('is_applied', false)
+      .eq('is_dismissed', false)
+      .order('generated_at', { ascending: false })
+      .limit(1);
+    setInsight(((ins ?? [])[0] as AiInsightRow | undefined) ?? null);
+  }, []);
 
-        setRows(todayTasks.map((t) => ({ task: t, completed: doneIds.has(t.id) })));
-      })();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  const now = useMemo(() => new Date(), []);
+  const today = family ? todayLocalDate(family.timezone) : '';
+
+  const todaysTasks = useMemo(() => {
+    if (!family) return [];
+    return tasks.filter((t) => isTaskScheduledOn(t, now, family.timezone));
+  }, [tasks, family, now]);
+
+  const scheduledNonBonus = todaysTasks.filter((t) => !t.is_bonus);
+  const doneCount = scheduledNonBonus.filter((t) => completedIds.has(t.id)).length;
+
+  async function markDone(task: TaskRowType) {
+    if (!family || !child) return;
+    const local_date = todayLocalDate(family.timezone);
+    tapLight();
+    // Optimistic update
+    setCompletedIds((prev) => new Set(prev).add(task.id));
+    const { error } = await getParentClient().from('task_completions').insert({
+      task_id: task.id,
+      child_id: child.id,
+      local_date,
+    });
+    if (error) {
+      setCompletedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      });
+      Alert.alert('Could not save', error.message);
+    } else {
+      tapSuccess();
+    }
+  }
+
+  async function applyInsight() {
+    if (!insight) return;
+    tapLight();
+    await getParentClient().from('ai_insights').update({ is_applied: true }).eq('id', insight.id);
+    setInsight(null);
+  }
+  async function dismissInsight() {
+    if (!insight) return;
+    await getParentClient().from('ai_insights').update({ is_dismissed: true }).eq('id', insight.id);
+    setInsight(null);
+  }
+
+  if (!family || !child) {
+    return <View style={{ flex: 1, backgroundColor: colors.white }} />;
+  }
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ color: '#666', marginBottom: 8 }}>Timezone: {tz}</Text>
-      <FlatList
-        data={rows}
-        keyExtractor={(r) => r.task.id}
-        renderItem={({ item }) => (
-          <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: '#eee' }}>
-            <Text style={{ fontSize: 16 }}>
-              {item.completed ? '✓ ' : '• '}
-              {item.task.icon ?? ''} {item.task.title}
-            </Text>
-            <Text style={{ color: '#666', fontSize: 12 }}>{item.task.time_slot}</Text>
+    <ScrollView
+      style={{ backgroundColor: colors.white }}
+      contentContainerStyle={{ padding: spacing.wide, paddingTop: spacing.section }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xxxl }}>
+        <View style={{ flex: 1 }}>
+          <Label>{formatTopDate(today)}</Label>
+          <Display style={{ marginTop: 2 }}>Today</Display>
+          <Caption style={{ marginTop: 2 }}>
+            {doneCount} of {scheduledNonBonus.length} done for {child.name}
+          </Caption>
+        </View>
+        <View
+          style={{
+            width: 42, height: 42, borderRadius: 21,
+            backgroundColor: colors.gray50,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 20 }}>🦄</Text>
+        </View>
+      </View>
+
+      {insight && <InsightCard text={insight.insight_text} onApply={applyInsight} onDismiss={dismissInsight} />}
+
+      {scheduledNonBonus.length === 0 && todaysTasks.length === 0 && (
+        <View style={{ paddingTop: spacing.section, alignItems: 'center' }}>
+          <Body color="muted" style={{ textAlign: 'center' }}>
+            Nothing on the list for today. You and {child.name} earned a rest.
+          </Body>
+        </View>
+      )}
+
+      {SLOTS.map((slot) => {
+        const slotTasks = todaysTasks.filter((t) => t.time_slot === slot);
+        if (slotTasks.length === 0) return null;
+        const pending = slotTasks.filter((t) => !completedIds.has(t.id));
+        const done = slotTasks.filter((t) => completedIds.has(t.id));
+        return (
+          <View key={slot} style={{ marginBottom: spacing.xxxl }}>
+            <SlotLabel>{slot.toUpperCase()}</SlotLabel>
+            {pending.map((t) => (
+              <View key={t.id} style={{ marginBottom: spacing.sm }}>
+                <TaskRow
+                  icon={t.icon}
+                  title={t.title}
+                  subtitle={recurrenceLabel(t)}
+                  variant={t.is_bonus ? 'bonus' : 'default'}
+                  bonusBadge={t.is_bonus}
+                  trailing={<PrimaryButton title="Done" size="sm" onPress={() => void markDone(t)} />}
+                />
+              </View>
+            ))}
+            {done.map((t) => (
+              <View key={t.id} style={{ marginBottom: spacing.sm }}>
+                <TaskRow
+                  icon={t.icon}
+                  title={t.title}
+                  subtitle={recurrenceLabel(t)}
+                  variant="completed"
+                  trailing={
+                    <View
+                      style={{
+                        width: 28, height: 28, borderRadius: 14,
+                        backgroundColor: colors.cobalt,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ color: colors.white, fontSize: 16 }}>✓</Text>
+                    </View>
+                  }
+                />
+              </View>
+            ))}
           </View>
-        )}
-        ListEmptyComponent={<Text>No tasks scheduled today.</Text>}
-      />
-    </View>
+        );
+      })}
+    </ScrollView>
   );
 }
