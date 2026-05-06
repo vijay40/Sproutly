@@ -5,3 +5,4 @@ export * from './PillGroup';
 export * from './Toggle';
 export * from './InputField';
 export * from './SlotLabel';
+export * from './CodeEntry';
