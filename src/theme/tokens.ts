@@ -1,22 +1,31 @@
 export const colors = {
   white: '#FFFFFF',
+  ink: '#24252C',
+  muted: '#6E6A7C',
+
   gray50: '#F5F6F8',
   gray100: '#E8E9EC',
-  navyInk: '#1D2A4A',
-  muted: '#8791A7',
-  cobalt: '#3056D3',
-  sky: '#DEEBF6',
-  skyInk: '#1D4670',
+
+  purple: '#5F33E1',
+  purpleInk: '#2A1A8A',
+  purpleWash: '#EEE9FF',
+
+  tileSky: '#DDEBFB',
+  tilePeach: '#F9E1D4',
+  tileLavender: '#E8DDF8',
+  tileSage: '#E1EFDF',
+
+  sage: '#E3EED9',
+  sageInk: '#3F5B1E',
+
   gold: '#FBE0BE',
   goldInk: '#7A4A14',
   goldBorder: '#C8A57A',
-  sageChip: '#E3EED9',
-  sageInk: '#3F5B1E',
+
   danger: '#B84242',
   dangerBorder: '#F0D6D6',
+
   toggleOff: '#C7CDD9',
-  // Strike-through line color on completed tasks
-  strike: '#C4CAD6',
 } as const;
 
 export const spacing = {
@@ -44,49 +53,43 @@ export const radii = {
 
 export const typography = {
   display: {
-    fontFamily: 'Fraunces-Medium',
-    fontSize: 30,
-    lineHeight: 33, // 1.1
-    letterSpacing: -0.6,
-  },
-  heading: {
-    fontFamily: 'Fraunces-Medium',
-    fontSize: 22,
-    lineHeight: 26, // 1.2
-    letterSpacing: -0.4,
-  },
-  headingLg: {
-    fontFamily: 'Fraunces-Medium',
-    fontSize: 26,
-    lineHeight: 31,
+    fontFamily: 'LexendDeca-Bold',
+    fontSize: 28,
+    lineHeight: 32,
     letterSpacing: -0.5,
   },
+  heading: {
+    fontFamily: 'LexendDeca-Bold',
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: -0.3,
+  },
+  headingSm: {
+    fontFamily: 'LexendDeca-SemiBold',
+    fontSize: 18,
+    lineHeight: 24,
+  },
   bodyEmphasis: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'LexendDeca-SemiBold',
     fontSize: 15,
     lineHeight: 21,
   },
   body: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'LexendDeca-Regular',
     fontSize: 14,
     lineHeight: 20,
   },
   caption: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'LexendDeca-Regular',
     fontSize: 12,
     lineHeight: 17,
   },
   label: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'LexendDeca-SemiBold',
     fontSize: 11,
     lineHeight: 15,
     letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
-  },
-  codeDigit: {
-    fontFamily: 'Fraunces-SemiBold',
-    fontSize: 28,
-    lineHeight: 28,
   },
 } as const;
 
