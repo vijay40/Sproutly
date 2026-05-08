@@ -15,9 +15,15 @@ interface Props<T extends string | number> {
   style?: ViewStyle;
 }
 
-export function PillGroup<T extends string | number>({ options, value, onChange, equalWidth = true, style }: Props<T>) {
+export function PillGroup<T extends string | number>({
+  options,
+  value,
+  onChange,
+  equalWidth = false,
+  style,
+}: Props<T>) {
   return (
-    <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }, style]}>
+    <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s }, style]}>
       {options.map((opt) => {
         const active = opt.value === value;
         return (
@@ -30,17 +36,17 @@ export function PillGroup<T extends string | number>({ options, value, onChange,
             style={({ pressed }) => [
               {
                 flex: equalWidth ? 1 : undefined,
-                minHeight: 44,
+                minHeight: 40,
                 paddingHorizontal: spacing.md,
-                borderRadius: radii.input,
-                backgroundColor: active ? colors.cobalt : colors.gray50,
+                borderRadius: radii.pill,
+                backgroundColor: active ? colors.purple : colors.purpleWash,
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed ? 0.9 : 1,
               },
             ]}
           >
-            <Text kind="bodyEmphasis" color={active ? 'white' : 'navyInk'}>
+            <Text kind="bodyEmphasis" color={active ? 'white' : 'purple'}>
               {opt.label}
             </Text>
           </Pressable>

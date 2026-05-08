@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { TextInput, View, Pressable } from 'react-native';
-import { colors, radii, typography } from '../theme/tokens';
+import { colors, radii } from '../theme/tokens';
 import { Text } from './Text';
 
 interface Props {
@@ -14,29 +14,30 @@ const LEN = 6;
 export function CodeEntry({ value, onChange, onSubmit }: Props) {
   const inputRef = useRef<TextInput>(null);
   const focus = () => inputRef.current?.focus();
-
   const digits = Array.from({ length: LEN }, (_, i) => value[i] ?? '');
+  const activeIndex = value.length;
 
   return (
     <Pressable onPress={focus} accessibilityLabel="Enter 6-digit pairing code">
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
         {digits.map((d, i) => {
           const filled = !!d;
+          const active = i === activeIndex;
           return (
             <View
               key={i}
               style={{
-                width: 48,
-                height: 60,
+                width: 44,
+                height: 56,
                 borderRadius: radii.input,
                 borderWidth: 2,
-                borderColor: filled ? colors.cobalt : colors.gray100,
+                borderColor: active ? colors.purple : filled ? colors.purple : colors.gray100,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: colors.white,
+                backgroundColor: active ? colors.purpleWash : colors.white,
               }}
             >
-              <Text style={typography.codeDigit} color="navyInk">
+              <Text style={{ fontFamily: 'LexendDeca-SemiBold', fontSize: 24, lineHeight: 28 }} color="ink">
                 {d}
               </Text>
             </View>
@@ -54,7 +55,6 @@ export function CodeEntry({ value, onChange, onSubmit }: Props) {
         keyboardType="number-pad"
         maxLength={LEN}
         autoFocus
-        // Off-screen but still focusable so the system keyboard opens.
         style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
       />
     </Pressable>

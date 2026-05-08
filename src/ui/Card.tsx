@@ -1,8 +1,8 @@
-import { View, ViewStyle, StyleSheet, StyleProp } from 'react-native';
+import { View, ViewStyle, StyleProp } from 'react-native';
 import { ReactNode } from 'react';
 import { colors, radii, spacing } from '../theme/tokens';
 
-type Variant = 'default' | 'insight' | 'bonus' | 'completed' | 'screen';
+type Variant = 'default' | 'bonus' | 'completed';
 
 interface Props {
   variant?: Variant;
@@ -10,32 +10,39 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
+const SHADOW = {
+  shadowColor: '#000',
+  shadowOpacity: 0.04,
+  shadowRadius: 32,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 2,
+} as const;
+
 export function Card({ variant = 'default', children, style }: Props) {
-  return <View style={[styles.base, variants[variant], style]}>{children}</View>;
+  const variantStyle: ViewStyle =
+    variant === 'bonus'
+      ? {
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderStyle: 'dashed',
+          borderColor: colors.goldBorder,
+        }
+      : variant === 'completed'
+        ? { backgroundColor: colors.white, opacity: 0.75 }
+        : { backgroundColor: colors.white };
+  return (
+    <View
+      style={[
+        {
+          borderRadius: radii.card,
+          padding: spacing.md,
+          ...SHADOW,
+        },
+        variantStyle,
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: radii.card,
-    padding: spacing.md,
-  },
-});
-
-const variants: Record<Variant, ViewStyle> = {
-  default: { backgroundColor: colors.gray50 },
-  insight: { backgroundColor: colors.sky },
-  bonus: {
-    backgroundColor: colors.gray50,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.goldBorder,
-  },
-  completed: { backgroundColor: colors.gray50, opacity: 0.65 },
-  screen: {
-    backgroundColor: colors.white,
-    borderRadius: radii.screen,
-    padding: spacing.xxl,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-  },
-};

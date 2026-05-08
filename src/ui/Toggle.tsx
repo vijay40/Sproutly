@@ -16,21 +16,21 @@ export function Toggle({ value, onChange, accessibilityLabel }: Props) {
       accessibilityLabel={accessibilityLabel}
       hitSlop={8}
       style={{
-        width: 44,
-        height: 26,
-        borderRadius: 13,
-        backgroundColor: value ? colors.cobalt : colors.toggleOff,
+        width: 48,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: value ? colors.purple : colors.toggleOff,
         padding: 2,
         justifyContent: 'center',
       }}
     >
       <View
         style={{
-          width: 22,
-          height: 22,
-          borderRadius: 11,
+          width: 24,
+          height: 24,
+          borderRadius: 12,
           backgroundColor: colors.white,
-          transform: [{ translateX: value ? 18 : 0 }],
+          transform: [{ translateX: value ? 20 : 0 }],
         }}
       />
     </Pressable>
