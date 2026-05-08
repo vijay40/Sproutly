@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { tapLight } from '../../src/lib/haptics';
@@ -7,13 +7,16 @@ import type { Recurrence, TaskRow, TimeSlot } from '../../src/types/db';
 import {
   BodyEmphasis,
   Caption,
+  Card,
   DangerButton,
+  Display,
+  IconTile,
+  Icons,
   InputField,
   Label,
   PillGroup,
   PrimaryButton,
-  Text,
-  TextButton,
+  Screen,
   Toggle,
 } from '../../src/ui';
 import { colors, radii, spacing } from '../../src/theme/tokens';
@@ -24,21 +27,14 @@ const SLOT_OPTIONS: { value: TimeSlot; label: string }[] = [
   { value: 'evening', label: 'Evening' },
 ];
 
-const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekdays', label: 'Weekdays' },
-  { value: 'custom', label: 'Custom' },
-  { value: 'one_time', label: 'Once' },
-];
-
 const DAY_OPTIONS: { value: number; label: string }[] = [
-  { value: 0, label: 'S' },
   { value: 1, label: 'M' },
   { value: 2, label: 'T' },
   { value: 3, label: 'W' },
   { value: 4, label: 'T' },
   { value: 5, label: 'F' },
   { value: 6, label: 'S' },
+  { value: 0, label: 'S' },
 ];
 
 export default function TaskEdit() {
@@ -72,6 +68,12 @@ export default function TaskEdit() {
       setIsBonus(r.is_bonus);
     })();
   }, [id, editing]);
+
+  function toggleDay(v: number) {
+    tapLight();
+    setRecurrence('custom');
+    setDays((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
+  }
 
   async function save() {
     if (!title.trim() || !childId || saving) {
@@ -119,115 +121,89 @@ export default function TaskEdit() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.white }}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: spacing.wide, paddingTop: spacing.section }}
-      >
-        {/* Top bar */}
+      <Screen>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl }}>
-          <TextButton title="Cancel" onPress={() => router.back()} />
-          <Label>{editing ? 'EDIT TASK' : 'NEW TASK'}</Label>
-          <PrimaryButton title={saving ? 'Saving…' : 'Save'} size="sm" onPress={() => void save()} disabled={saving} />
+          <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={{ width: 36, height: 36 }}>
+            <Icons.ArrowLeftIcon color={colors.ink} />
+          </Pressable>
+          <Display style={{ fontSize: 20 }}>{editing ? 'Edit Task' : 'New Task'}</Display>
+          <View style={{ width: 36 }} />
         </View>
 
-        {/* Icon + title card */}
-        <View
-          style={{
-            backgroundColor: colors.gray50,
-            borderRadius: radii.card,
-            padding: spacing.xl,
-            marginBottom: spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.md,
-          }}
-        >
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
           <Pressable
-            onPress={() => Alert.prompt('Icon', 'Enter an emoji', (v) => setIcon(v ?? ''))}
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: radii.card,
-              backgroundColor: colors.white,
-              borderWidth: 1,
-              borderColor: colors.gray100,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            onPress={() =>
+              Alert.prompt?.('Icon', 'Enter an emoji', (v: string | undefined) => setIcon(v ?? ''))
+            }
           >
-            <Text style={{ fontSize: 32 }}>{icon || '•'}</Text>
+            <IconTile tint="sky" size={44} emoji={icon || '•'} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Label style={{ marginBottom: 4 }}>TITLE</Label>
+            <Caption>Title</Caption>
+            <BodyEmphasis>{title || 'Untitled task'}</BodyEmphasis>
             <InputField
-              label=""
               value={title}
               onChangeText={setTitle}
               placeholder="What needs to be done?"
-              style={{ fontSize: 17 }}
+              style={{ marginTop: spacing.s }}
             />
           </View>
+        </Card>
+
+        <Label style={{ marginBottom: spacing.s, marginTop: spacing.lg }}>TIME SLOT</Label>
+        <PillGroup
+          options={SLOT_OPTIONS}
+          value={slot}
+          onChange={(v) => { tapLight(); setSlot(v); }}
+          style={{ marginBottom: spacing.md }}
+        />
+
+        <Label style={{ marginBottom: spacing.s, marginTop: spacing.lg }}>REPEAT</Label>
+        <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md }}>
+          {DAY_OPTIONS.map((d) => {
+            const active = days.includes(d.value);
+            return (
+              <Pressable
+                key={d.value}
+                onPress={() => toggleDay(d.value)}
+                accessibilityRole="button"
+                accessibilityLabel={`Day ${d.label}`}
+                accessibilityState={{ selected: active }}
+                style={{
+                  flex: 1,
+                  aspectRatio: 1,
+                  borderRadius: radii.input,
+                  backgroundColor: active ? colors.purple : colors.purpleWash,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <BodyEmphasis color={active ? 'white' : 'purple'}>{d.label}</BodyEmphasis>
+              </Pressable>
+            );
+          })}
         </View>
 
-        {/* When */}
-        <View style={{ marginBottom: spacing.md }}>
-          <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>WHEN</Label>
-          <PillGroup options={SLOT_OPTIONS} value={slot} onChange={(v) => { tapLight(); setSlot(v); }} />
-        </View>
-
-        {/* How often */}
-        <View style={{ marginBottom: spacing.md }}>
-          <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>HOW OFTEN</Label>
-          <PillGroup options={RECURRENCE_OPTIONS} value={recurrence} onChange={(v) => { tapLight(); setRecurrence(v); }} equalWidth={false} />
-          {recurrence === 'custom' && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.s }}>
-              {DAY_OPTIONS.map((d) => {
-                const active = days.includes(d.value);
-                return (
-                  <Pressable
-                    key={d.value}
-                    onPress={() => {
-                      tapLight();
-                      setDays((prev) => (prev.includes(d.value) ? prev.filter((x) => x !== d.value) : [...prev, d.value]));
-                    }}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: radii.input,
-                      backgroundColor: active ? colors.cobalt : colors.gray50,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <BodyEmphasis color={active ? 'white' : 'navyInk'}>{d.label}</BodyEmphasis>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        {/* Bonus toggle */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: spacing.md,
-            backgroundColor: colors.gray50,
-            borderRadius: radii.card,
-            marginBottom: spacing.lg,
-          }}
-        >
-          <View style={{ flex: 1, paddingRight: spacing.m }}>
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+          <View style={{ flex: 1 }}>
             <BodyEmphasis>Bonus task</BodyEmphasis>
-            <Caption style={{ marginTop: 2 }}>Completing unlocks a unicorn cosmetic</Caption>
+            <Caption style={{ marginTop: 2 }}>Extra task, no guilt when skipped</Caption>
           </View>
           <Toggle value={isBonus} onChange={(v) => { tapLight(); setIsBonus(v); }} accessibilityLabel="Bonus task" />
-        </View>
+        </Card>
 
-        {editing && <DangerButton title="Delete task" fullWidth onPress={remove} />}
-      </ScrollView>
+        {editing && <DangerButton title="Delete task" fullWidth onPress={remove} style={{ marginBottom: spacing.md }} />}
+
+        <View style={{ flex: 1 }} />
+
+        <PrimaryButton
+          title={saving ? 'Saving…' : 'Save Task'}
+          size="lg"
+          fullWidth
+          disabled={saving}
+          onPress={() => void save()}
+        />
+      </Screen>
     </KeyboardAvoidingView>
   );
 }

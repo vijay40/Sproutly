@@ -7,12 +7,15 @@ import { resetClients } from '../../src/lib/supabase';
 import { getPairingRedeemUrl } from '../../src/lib/server';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
 import {
+  Body,
   Caption,
   CodeEntry,
-  HeadingLg,
-  Text,
+  Display,
+  IconTile,
+  Icons,
+  Screen,
 } from '../../src/ui';
-import { colors, radii, spacing } from '../../src/theme/tokens';
+import { colors, spacing } from '../../src/theme/tokens';
 
 export default function KidPair() {
   const [code, setCode] = useState('');
@@ -56,49 +59,24 @@ export default function KidPair() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.white, padding: spacing.wide, paddingTop: spacing.section }}>
-      <Pressable onPress={() => router.back()} style={{ width: 30, height: 30, marginBottom: spacing.wide }} accessibilityLabel="Back">
-        <Text style={{ color: colors.muted, fontSize: 22, lineHeight: 24 }}>‹</Text>
+    <Screen scroll={false}>
+      <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={{ width: 36, height: 36, marginBottom: spacing.lg }}>
+        <Icons.ArrowLeftIcon color={colors.ink} />
       </Pressable>
 
-      <View style={{ alignItems: 'center', marginBottom: spacing.section }}>
-        <View
-          style={{
-            width: 72, height: 72, borderRadius: 36,
-            backgroundColor: colors.sky,
-            alignItems: 'center', justifyContent: 'center',
-            marginBottom: spacing.md,
-          }}
-        >
-          <Text style={{ fontSize: 32 }}>📟</Text>
-        </View>
-        <HeadingLg style={{ textAlign: 'center' }}>Pair this iPad</HeadingLg>
-        <Caption style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 280 }}>
-          Enter the 6-digit code from the parent's phone (Settings → Pair iPad).
-        </Caption>
+      <View style={{ alignItems: 'center', marginBottom: spacing.xl }}>
+        <IconTile tint="sky" size={80} style={{ borderRadius: 40, marginBottom: spacing.md }} emoji="📱" />
+        <Display style={{ textAlign: 'center' }}>Pair this iPad</Display>
+        <Body color="muted" style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 300 }}>
+          Enter the 6-digit code from your phone.{'\n'}Settings → Pair iPad.
+        </Body>
       </View>
 
-      <CodeEntry
-        value={code}
-        onChange={(v) => { tapLight(); setCode(v); }}
-        onSubmit={() => void redeem()}
-      />
-      <Caption style={{ textAlign: 'center', marginTop: spacing.md }}>
-        {loading ? 'Pairing…' : 'Codes expire after 10 minutes.'}
+      <CodeEntry value={code} onChange={(v) => { tapLight(); setCode(v); }} onSubmit={() => void redeem()} />
+
+      <Caption style={{ textAlign: 'center', marginTop: spacing.lg }}>
+        {loading ? 'Pairing…' : code.length === 6 ? 'Tap to continue' : 'Tap the last box to continue.'}
       </Caption>
-
-      <View style={{ flex: 1 }} />
-
-      <View
-        style={{
-          backgroundColor: colors.gray50,
-          borderRadius: radii.card,
-          padding: spacing.md,
-          alignItems: 'center',
-        }}
-      >
-        <Caption>Enter 6-digit code above</Caption>
-      </View>
-    </View>
+    </Screen>
   );
 }

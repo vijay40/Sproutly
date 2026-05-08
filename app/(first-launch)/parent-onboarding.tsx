@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { setMode } from '../../src/lib/mode';
 import { tapLight } from '../../src/lib/haptics';
 import {
   Body,
+  Card,
   Caption,
-  HeadingLg,
+  Display,
+  IconTile,
+  Icons,
   InputField,
   Label,
   PillGroup,
   PrimaryButton,
-  Text,
+  Screen,
 } from '../../src/ui';
-import { colors, radii, spacing } from '../../src/theme/tokens';
+import { colors, spacing } from '../../src/theme/tokens';
 
 function guessTimezone(): string {
   try {
@@ -30,11 +33,10 @@ export default function ParentOnboarding() {
   const router = useRouter();
   const [childName, setChildName] = useState('');
   const [age, setAge] = useState<number | null>(null);
-  const [timezone, setTimezone] = useState(guessTimezone());
+  const [timezone] = useState(guessTimezone());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // If the user previously signed in but onboarding was interrupted, check for an existing family.
     void (async () => {
       const { data: fam } = await getParentClient().from('families').select('id').limit(1);
       if (fam?.length) {
@@ -67,7 +69,6 @@ export default function ParentOnboarding() {
       .from('children')
       .insert({ family_id: family.id, name: childName.trim(), age });
     if (cErr) {
-      // Roll back the just-created family row so the user isn't stuck in a partial state.
       await sb.from('families').delete().eq('id', family.id);
       Alert.alert('Setup failed', cErr.message);
       setSaving(false);
@@ -82,46 +83,42 @@ export default function ParentOnboarding() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.white }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.wide, paddingTop: spacing.section, flexGrow: 1 }}>
-        <Pressable onPress={() => router.back()} style={{ width: 30, height: 30, marginBottom: spacing.wide }} accessibilityLabel="Back">
-          <Text style={{ color: colors.muted, fontSize: 22, lineHeight: 24 }}>‹</Text>
+      <Screen>
+        <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={{ width: 36, height: 36, marginBottom: spacing.md }}>
+          <Icons.ArrowLeftIcon color={colors.ink} />
         </Pressable>
 
-        <View style={{ marginBottom: spacing.wide }}>
-          <HeadingLg>Tell us about your child</HeadingLg>
-          <Caption style={{ marginTop: 4 }}>This is the only child you'll set up in V1.</Caption>
-        </View>
+        <Display>Set up your family</Display>
+        <Body color="muted" style={{ marginTop: spacing.xs, marginBottom: spacing.xl }}>
+          We'll start with one child. You can add more later.
+        </Body>
 
         <View style={{ marginBottom: spacing.lg }}>
-          <InputField label="CHILD'S NAME" value={childName} onChangeText={setChildName} placeholder="First name" />
+          <InputField label="CHILD NAME" value={childName} onChangeText={setChildName} placeholder="First name" />
         </View>
 
-        <View style={{ marginBottom: spacing.lg }}>
-          <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>AGE</Label>
-          <PillGroup options={AGE_OPTIONS} value={age} onChange={(v) => { tapLight(); setAge(v); }} />
-        </View>
+        <Label style={{ marginBottom: spacing.s }}>AGE</Label>
+        <PillGroup options={AGE_OPTIONS} value={age} onChange={(v) => { tapLight(); setAge(v); }} style={{ marginBottom: spacing.lg }} />
 
-        <View style={{ marginBottom: spacing.lg }}>
-          <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>TIMEZONE</Label>
-          <View
-            style={{
-              backgroundColor: colors.gray50,
-              borderRadius: radii.card,
-              padding: spacing.md,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.m,
-            }}
-          >
-            <Body style={{ flex: 1 }}>{timezone}</Body>
-            <Caption>auto-detected</Caption>
+        <Label style={{ marginBottom: spacing.s }}>TIMEZONE</Label>
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl }}>
+          <IconTile tint="purpleWash" emoji="🕰️" />
+          <View style={{ flex: 1 }}>
+            <Body color="ink">{timezone}</Body>
+            <Caption style={{ marginTop: 2 }}>auto-detected · tap to change</Caption>
           </View>
-        </View>
+        </Card>
 
         <View style={{ flex: 1 }} />
 
-        <PrimaryButton title={saving ? 'Saving…' : 'Continue'} size="lg" fullWidth disabled={saving} onPress={() => void save()} />
-      </ScrollView>
+        <PrimaryButton
+          title={saving ? 'Saving…' : 'Continue'}
+          size="lg"
+          fullWidth
+          disabled={saving}
+          onPress={() => void save()}
+        />
+      </Screen>
     </KeyboardAvoidingView>
   );
 }

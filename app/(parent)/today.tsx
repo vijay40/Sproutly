@@ -1,18 +1,22 @@
-import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, View, Alert } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { todayLocalDate } from '../../src/lib/time';
 import { isTaskScheduledOn } from '../../src/domain/tasks';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
+import { getParentFirstName } from '../../src/lib/userName';
 import type { ChildRow, FamilyRow, TaskCompletionRow, TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
 import {
   Body,
+  BodyEmphasis,
   Caption,
   Display,
+  IconTile,
+  Icons,
   InsightCard,
-  Label,
   PrimaryButton,
+  Screen,
   SlotLabel,
   TaskRow,
   Text,
@@ -27,13 +31,6 @@ type AiInsightRow = {
 };
 
 const SLOTS: TimeSlot[] = ['morning', 'afternoon', 'evening'];
-
-function formatTopDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d
-    .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
-    .toUpperCase();
-}
 
 function recurrenceLabel(t: TaskRowType): string {
   switch (t.recurrence) {
@@ -53,6 +50,11 @@ export default function Today() {
   const [tasks, setTasks] = useState<TaskRowType[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [insight, setInsight] = useState<AiInsightRow | null>(null);
+  const [parentName, setParentName] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getParentFirstName().then(setParentName);
+  }, []);
 
   const load = useCallback(async () => {
     const sb = getParentClient();
@@ -87,7 +89,6 @@ export default function Today() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const now = useMemo(() => new Date(), []);
-  const today = family ? todayLocalDate(family.timezone) : '';
 
   const todaysTasks = useMemo(() => {
     if (!family) return [];
@@ -96,12 +97,12 @@ export default function Today() {
 
   const scheduledNonBonus = todaysTasks.filter((t) => !t.is_bonus);
   const doneCount = scheduledNonBonus.filter((t) => completedIds.has(t.id)).length;
+  const totalCount = scheduledNonBonus.length;
 
   async function markDone(task: TaskRowType) {
     if (!family || !child) return;
     const local_date = todayLocalDate(family.timezone);
     tapLight();
-    // Optimistic update
     setCompletedIds((prev) => new Set(prev).add(task.id));
     const { error } = await getParentClient().from('task_completions').insert({
       task_id: task.id,
@@ -136,31 +137,48 @@ export default function Today() {
     return <View style={{ flex: 1, backgroundColor: colors.white }} />;
   }
 
+  const greeting = parentName ?? 'there';
+
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.white }}
-      contentContainerStyle={{ padding: spacing.wide, paddingTop: spacing.section }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xxxl }}>
-        <View style={{ flex: 1 }}>
-          <Label>{formatTopDate(today)}</Label>
-          <Display style={{ marginTop: 2 }}>Today</Display>
-          <Caption style={{ marginTop: 2 }}>
-            {doneCount} of {scheduledNonBonus.length} done for {child.name}
-          </Caption>
+    <Screen bottomGutter={88}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <IconTile tint="lavender" emoji={greeting.charAt(0).toUpperCase()} />
+          <View>
+            <Caption>Hello!</Caption>
+            <BodyEmphasis>{greeting}</BodyEmphasis>
+          </View>
         </View>
-        <View
-          style={{
-            width: 42, height: 42, borderRadius: 21,
-            backgroundColor: colors.gray50,
-            alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 20 }}>🦄</Text>
-        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Notifications" hitSlop={10}>
+          <IconTile tint="purpleWash" size={40}><Icons.BellIcon size={20} color={colors.purple} /></IconTile>
+        </Pressable>
       </View>
 
-      {insight && <InsightCard text={insight.insight_text} onApply={applyInsight} onDismiss={dismissInsight} />}
+      {insight && (
+        <InsightCard
+          text={insight.insight_text}
+          chipLabel="INSIGHT"
+          counter={totalCount > 0 ? { current: doneCount, total: totalCount } : undefined}
+          onApply={applyInsight}
+          onDismiss={dismissInsight}
+        />
+      )}
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.s, marginBottom: spacing.s }}>
+        <Display>Today</Display>
+        {totalCount > 0 && (
+          <View
+            style={{
+              backgroundColor: colors.purpleWash,
+              paddingHorizontal: 10,
+              paddingVertical: 3,
+              borderRadius: 999,
+            }}
+          >
+            <Text kind="bodyEmphasis" color="purple">{totalCount}</Text>
+          </View>
+        )}
+      </View>
 
       {scheduledNonBonus.length === 0 && todaysTasks.length === 0 && (
         <View style={{ paddingTop: spacing.section, alignItems: 'center' }}>
@@ -176,17 +194,17 @@ export default function Today() {
         const pending = slotTasks.filter((t) => !completedIds.has(t.id));
         const done = slotTasks.filter((t) => completedIds.has(t.id));
         return (
-          <View key={slot} style={{ marginBottom: spacing.xxxl }}>
+          <View key={slot}>
             <SlotLabel>{slot.toUpperCase()}</SlotLabel>
             {pending.map((t) => (
               <View key={t.id} style={{ marginBottom: spacing.sm }}>
                 <TaskRow
                   icon={t.icon}
                   title={t.title}
-                  subtitle={recurrenceLabel(t)}
+                  subtitle={`${recurrenceLabel(t)}`}
                   variant={t.is_bonus ? 'bonus' : 'default'}
                   bonusBadge={t.is_bonus}
-                  trailing={<PrimaryButton title="Done" size="sm" onPress={() => void markDone(t)} />}
+                  trailing={<PrimaryButton title="Mark" size="sm" onPress={() => void markDone(t)} />}
                 />
               </View>
             ))}
@@ -201,11 +219,11 @@ export default function Today() {
                     <View
                       style={{
                         width: 28, height: 28, borderRadius: 14,
-                        backgroundColor: colors.cobalt,
+                        backgroundColor: colors.sage,
                         alignItems: 'center', justifyContent: 'center',
                       }}
                     >
-                      <Text style={{ color: colors.white, fontSize: 16 }}>✓</Text>
+                      <Icons.CheckIcon size={16} color={colors.sageInk} />
                     </View>
                   }
                 />
@@ -214,6 +232,6 @@ export default function Today() {
           </View>
         );
       })}
-    </ScrollView>
+    </Screen>
   );
 }

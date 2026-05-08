@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { clearMode } from '../../src/lib/mode';
@@ -9,15 +9,18 @@ import type { ChildRow } from '../../src/types/db';
 import {
   Body,
   BodyEmphasis,
+  Card,
   Caption,
   DangerButton,
   Display,
-  Label,
+  IconTile,
+  Icons,
+  Screen,
   SecondaryButton,
-  Text,
   TextButton,
+  SectionHeader,
 } from '../../src/ui';
-import { colors, radii, spacing } from '../../src/theme/tokens';
+import { spacing } from '../../src/theme/tokens';
 
 type DeviceRow = { id: string; device_label: string | null; paired_at: string | null; device_token_hash: string | null };
 
@@ -83,121 +86,49 @@ export default function Settings() {
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.white }}
-      contentContainerStyle={{ padding: spacing.wide, paddingTop: spacing.section }}
-    >
-      <View style={{ marginBottom: spacing.xxxl }}>
-        <Label>ACCOUNT</Label>
-        <Display style={{ marginTop: 2 }}>Settings</Display>
-      </View>
+    <Screen bottomGutter={88}>
+      <Display style={{ marginBottom: spacing.lg }}>Settings</Display>
 
-      {/* Child */}
-      <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>CHILD</Label>
       {child && (
-        <View
-          style={{
-            backgroundColor: colors.gray50,
-            borderRadius: radii.card,
-            padding: spacing.md,
-            marginBottom: spacing.xxxl,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.m, marginBottom: spacing.md }}>
-            <View
-              style={{
-                width: 48, height: 48, borderRadius: 24,
-                backgroundColor: colors.sky,
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 24 }}>🦄</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <BodyEmphasis>{child.name}</BodyEmphasis>
-              <Caption style={{ marginTop: 1 }}>
-                {child.age ? `Age ${child.age} · ` : ''}Stage {child.avatar_stage} · {child.successful_days} successful days
-              </Caption>
-            </View>
-          </View>
-          <SecondaryButton title="Edit profile" fullWidth size="sm" onPress={() => Alert.alert('Edit profile', 'Coming soon.')} />
-        </View>
-      )}
-
-      {/* Kid iPad */}
-      <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>KID IPAD</Label>
-      {devices.map((d) => (
-        <View
-          key={d.id}
-          style={{
-            backgroundColor: colors.gray50,
-            borderRadius: radii.card,
-            padding: spacing.md,
-            marginBottom: spacing.sm,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.m,
-          }}
-        >
-          <View
-            style={{
-              width: 36, height: 36, borderRadius: 18,
-              backgroundColor: colors.sageChip,
-              alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: colors.sageInk, fontSize: 16 }}>✓</Text>
-          </View>
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <IconTile tint="lavender" size={48} emoji="🦄" />
           <View style={{ flex: 1 }}>
-            <BodyEmphasis>{d.device_label ?? 'iPad'}</BodyEmphasis>
-            <Caption>
-              {d.paired_at ? `Paired ${relativeTime(new Date(d.paired_at))}` : 'Paired'}
+            <BodyEmphasis>{child.name}</BodyEmphasis>
+            <Caption style={{ marginTop: 2 }}>
+              {child.age ? `Age ${child.age} · ` : ''}{timezone || ''}
             </Caption>
           </View>
-          <TextButton title="Remove" color="cobalt" onPress={() => removeDevice(d.id)} />
-        </View>
+          <TextButton title="Edit" color="purple" onPress={() => Alert.alert('Edit profile', 'Coming soon.')} />
+        </Card>
+      )}
+
+      <SectionHeader title="Paired iPads" />
+      {devices.map((d) => (
+        <Card key={d.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm }}>
+          <IconTile tint="sky" size={40} emoji="📱" />
+          <View style={{ flex: 1 }}>
+            <BodyEmphasis>{d.device_label ?? 'Kid iPad'}</BodyEmphasis>
+            <Caption>{d.paired_at ? `Paired ${relativeTime(new Date(d.paired_at))}` : 'Paired'}</Caption>
+          </View>
+          <Pressable onPress={() => removeDevice(d.id)} accessibilityLabel="Remove iPad">
+            <Icons.ChevronRightIcon />
+          </Pressable>
+        </Card>
       ))}
       <SecondaryButton
         title={devices.length === 0 ? '+ Pair an iPad' : '+ Pair another iPad'}
         fullWidth
         onPress={generatePairingCode}
-        style={{ marginBottom: spacing.xxxl }}
+        style={{ marginTop: devices.length === 0 ? 0 : spacing.xs }}
       />
 
-      {/* Preferences */}
-      <Label style={{ marginBottom: spacing.s, paddingLeft: spacing.xxs }}>PREFERENCES</Label>
-      <Pressable
-        onPress={() => Alert.alert('Timezone', 'Timezone picker coming soon.')}
-        style={{
-          backgroundColor: colors.gray50,
-          borderRadius: radii.card,
-          padding: spacing.md,
-          marginBottom: spacing.sm,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.m,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Body>Timezone</Body>
-          <Caption style={{ marginTop: 1 }}>{timezone}</Caption>
-        </View>
-        <Text style={{ color: colors.muted, fontSize: 18 }}>›</Text>
-      </Pressable>
+      <SectionHeader title="Account" />
+      <Card>
+        <Caption>Signed in as</Caption>
+        <Body style={{ marginTop: 2 }}>{email || '—'}</Body>
+      </Card>
 
-      <View
-        style={{
-          backgroundColor: colors.gray50,
-          borderRadius: radii.card,
-          padding: spacing.md,
-          marginBottom: spacing.xxxl,
-        }}
-      >
-        <Body>{email || '—'}</Body>
-        <Caption style={{ marginTop: 1 }}>Signed in with Google</Caption>
-      </View>
-
-      <DangerButton title="Sign out" fullWidth onPress={signOut} />
-    </ScrollView>
+      <DangerButton title="Sign out" fullWidth onPress={signOut} style={{ marginTop: spacing.lg }} />
+    </Screen>
   );
 }

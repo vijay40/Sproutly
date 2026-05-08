@@ -4,8 +4,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { consumeAuthSessionFromUrl, getParentClient } from '../../src/lib/supabase';
-import { Caption, GoogleSignInButton, HeadingLg, Text } from '../../src/ui';
-import { colors, radii, spacing } from '../../src/theme/tokens';
+import {
+  Body,
+  Caption,
+  Display,
+  GoogleSignInButton,
+  IconTile,
+  Icons,
+  Screen,
+} from '../../src/ui';
+import { colors, spacing } from '../../src/theme/tokens';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -46,42 +54,37 @@ export default function ParentAuth() {
   }, [router]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.white, padding: spacing.wide, paddingTop: spacing.section }}>
-      <Pressable onPress={() => router.back()} style={{ width: 30, height: 30, marginBottom: spacing.section }} accessibilityLabel="Back">
-        <Text style={{ color: colors.muted, fontSize: 22, lineHeight: 24 }}>‹</Text>
+    <Screen scroll={false}>
+      <Pressable
+        onPress={() => router.back()}
+        accessibilityLabel="Back"
+        style={{ width: 36, height: 36, marginBottom: spacing.xl }}
+      >
+        <Icons.ArrowLeftIcon color={colors.ink} />
       </Pressable>
 
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <View
-          style={{
-            width: 64, height: 64, borderRadius: radii.card,
-            backgroundColor: colors.gray50,
-            alignItems: 'center', justifyContent: 'center',
-            marginBottom: spacing.xl,
-          }}
-        >
-          <Text style={{ fontSize: 28 }}>🔐</Text>
-        </View>
-        <HeadingLg style={{ textAlign: 'center' }}>Sign in to Sproutly</HeadingLg>
-        <Caption style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 300 }}>
-          Your tasks and insights stay private and encrypted.
-        </Caption>
+        <IconTile tint="purpleWash" size={80} style={{ borderRadius: 40, marginBottom: spacing.xl }} emoji="👋" />
+        <Display style={{ textAlign: 'center' }}>Let's sign you in</Display>
+        <Body color="muted" style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 300 }}>
+          Parents sign in with Google.{'\n'}The kid iPad never signs in.
+        </Body>
       </View>
 
-      <View style={{ paddingBottom: spacing.wide }}>
+      <View style={{ paddingBottom: spacing.wide, gap: spacing.md }}>
         <GoogleSignInButton onPress={() => void signInWithGoogle()} disabled={busy} />
         {hasSession && (
           <Pressable
             onPress={() => router.replace('/(first-launch)/parent-onboarding')}
-            style={{ marginTop: spacing.md, alignItems: 'center' }}
+            style={{ alignItems: 'center' }}
           >
-            <Caption color="cobalt">Continue to setup</Caption>
+            <Caption color="purple">Continue to setup</Caption>
           </Pressable>
         )}
-        <Caption style={{ textAlign: 'center', marginTop: spacing.xxl, paddingHorizontal: spacing.lg }}>
-          By continuing you agree to our Terms &amp; Privacy Policy
+        <Caption style={{ textAlign: 'center', marginTop: spacing.s }}>
+          By continuing you agree to the Sproutly terms.
         </Caption>
       </View>
-    </View>
+    </Screen>
   );
 }
