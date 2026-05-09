@@ -96,3 +96,36 @@ export function CheckIcon({ size = 16, color = '#3F5B1E' }: IconProps) {
     </Base>
   );
 }
+
+export function SearchIcon({ size = 16, color = '#6E6A7C' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M 9 1 C 4.58 1 1 4.58 1 9 C 1 13.42 4.58 17 9 17 C 13.42 17 17 13.42 17 9 C 17 4.58 13.42 1 9 1 Z"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M 15 15 L 19 19"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+export function PencilIcon({ size = 16, color = '#5F33E1' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <Path
+        d="M 2 12 L 10 4 L 12 6 L 4 14 L 2 14 Z"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
