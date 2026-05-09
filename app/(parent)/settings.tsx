@@ -15,6 +15,7 @@ import {
   Display,
   IconTile,
   Icons,
+  PairCodeSheet,
   Screen,
   SecondaryButton,
   TextButton,
@@ -30,6 +31,7 @@ export default function Settings() {
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [email, setEmail] = useState<string>('');
   const [timezone, setTimezone] = useState<string>('');
+  const [pairing, setPairing] = useState<{ code: string; expiresAt: Date } | null>(null);
 
   const load = useCallback(async () => {
     const sb = getParentClient();
@@ -52,7 +54,10 @@ export default function Settings() {
     const { data, error } = await getParentClient().rpc('create_pairing_code');
     if (error) return Alert.alert('Error', error.message);
     const row = Array.isArray(data) ? data[0] : data;
-    Alert.alert('Pairing code', `Enter this code on the iPad:\n\n${row?.pairing_code}\n\nExpires at ${new Date(row?.expires_at).toLocaleTimeString()}`);
+    const code = row?.pairing_code as string | undefined;
+    const expiresAtRaw = row?.expires_at as string | undefined;
+    if (!code || !expiresAtRaw) return Alert.alert('Error', 'Could not generate pairing code.');
+    setPairing({ code, expiresAt: new Date(expiresAtRaw) });
     void load();
   }
 
@@ -129,6 +134,13 @@ export default function Settings() {
       </Card>
 
       <DangerButton title="Sign out" fullWidth onPress={signOut} style={{ marginTop: spacing.lg }} />
+
+      <PairCodeSheet
+        visible={pairing !== null}
+        code={pairing?.code ?? null}
+        expiresAt={pairing?.expiresAt ?? null}
+        onClose={() => setPairing(null)}
+      />
     </Screen>
   );
 }

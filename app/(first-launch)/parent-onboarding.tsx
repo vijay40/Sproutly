@@ -9,11 +9,12 @@ import {
   Card,
   Caption,
   Display,
+  DropdownField,
   IconTile,
   Icons,
   InputField,
   Label,
-  PillGroup,
+  PickerSheet,
   PrimaryButton,
   Screen,
 } from '../../src/ui';
@@ -27,7 +28,10 @@ function guessTimezone(): string {
   }
 }
 
-const AGE_OPTIONS = [5, 6, 7, 8, 9].map((n) => ({ value: n, label: String(n) }));
+const AGE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 3).map((n) => ({
+  value: n,
+  label: `${n} years old`,
+}));
 
 export default function ParentOnboarding() {
   const router = useRouter();
@@ -35,13 +39,14 @@ export default function ParentOnboarding() {
   const [age, setAge] = useState<number | null>(null);
   const [timezone] = useState(guessTimezone());
   const [saving, setSaving] = useState(false);
+  const [agePickerOpen, setAgePickerOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
       const { data: fam } = await getParentClient().from('families').select('id').limit(1);
       if (fam?.length) {
         await setMode('parent');
-        router.replace('/(parent)/today');
+        // router.replace('/(parent)/today');
       }
     })();
   }, [router]);
@@ -98,7 +103,12 @@ export default function ParentOnboarding() {
         </View>
 
         <Label style={{ marginBottom: spacing.s }}>AGE</Label>
-        <PillGroup options={AGE_OPTIONS} value={age} onChange={(v) => { tapLight(); setAge(v); }} style={{ marginBottom: spacing.lg }} />
+        <DropdownField
+          value={age !== null ? `${age} years old` : null}
+          placeholder="Select age"
+          onPress={() => setAgePickerOpen(true)}
+          style={{ marginBottom: spacing.lg }}
+        />
 
         <Label style={{ marginBottom: spacing.s }}>TIMEZONE</Label>
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl }}>
@@ -119,6 +129,15 @@ export default function ParentOnboarding() {
           onPress={() => void save()}
         />
       </Screen>
+
+      <PickerSheet
+        visible={agePickerOpen}
+        title="Select age"
+        options={AGE_OPTIONS}
+        value={age}
+        onSelect={(v) => setAge(v)}
+        onClose={() => setAgePickerOpen(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

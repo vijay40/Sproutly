@@ -17,4 +17,8 @@ export * from './TabBar';
 export * from './StatChip';
 export * from './MiniBarChart';
 export * from './InsightListItem';
+export * from './BottomSheet';
+export * from './PickerSheet';
+export * from './DropdownField';
+export * from './PairCodeSheet';
 export * as Icons from './icons';

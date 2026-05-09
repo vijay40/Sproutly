@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { todayLocalDate } from '../../src/lib/time';
@@ -9,10 +9,8 @@ import { getParentFirstName } from '../../src/lib/userName';
 import type { ChildRow, FamilyRow, TaskCompletionRow, TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
 import {
   Body,
-  BodyEmphasis,
   Caption,
   Display,
-  IconTile,
   Icons,
   InsightCard,
   PrimaryButton,
@@ -22,6 +20,7 @@ import {
   Text,
 } from '../../src/ui';
 import { colors, spacing } from '../../src/theme/tokens';
+import { TodayTopHeader } from './TodayTopHeader';
 
 type AiInsightRow = {
   id: string;
@@ -141,18 +140,7 @@ export default function Today() {
 
   return (
     <Screen bottomGutter={88}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <IconTile tint="lavender" emoji={greeting.charAt(0).toUpperCase()} />
-          <View>
-            <Caption>Hello!</Caption>
-            <BodyEmphasis>{greeting}</BodyEmphasis>
-          </View>
-        </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Notifications" hitSlop={10}>
-          <IconTile tint="purpleWash" size={40}><Icons.BellIcon size={20} color={colors.purple} /></IconTile>
-        </Pressable>
-      </View>
+      <TodayTopHeader greeting={greeting} />
 
       {insight && (
         <InsightCard

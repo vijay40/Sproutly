@@ -1,7 +1,6 @@
-import { View, ViewStyle } from 'react-native';
+import { Text as RNText, View, ViewStyle } from 'react-native';
 import { ReactNode } from 'react';
 import { colors, radii } from '../theme/tokens';
-import { Text } from './Text';
 
 type Tint = 'sky' | 'peach' | 'lavender' | 'sage' | 'purpleWash';
 
@@ -16,19 +15,20 @@ const TINTS: Record<Tint, string> = {
 interface Props {
   tint?: Tint;
   size?: number;
+  radius?: number;
   emoji?: string;
   children?: ReactNode;
   style?: ViewStyle;
 }
 
-export function IconTile({ tint = 'lavender', size = 40, emoji, children, style }: Props) {
+export function IconTile({ tint = 'lavender', size = 40, radius, emoji, children, style }: Props) {
   return (
     <View
       style={[
         {
           width: size,
           height: size,
-          borderRadius: radii.input,
+          borderRadius: radius ?? radii.input,
           backgroundColor: TINTS[tint],
           alignItems: 'center',
           justifyContent: 'center',
@@ -36,7 +36,7 @@ export function IconTile({ tint = 'lavender', size = 40, emoji, children, style 
         style,
       ]}
     >
-      {emoji ? <Text style={{ fontSize: Math.round(size * 0.55) }}>{emoji}</Text> : children}
+      {emoji ? <RNText style={{ fontSize: Math.round(size * 0.55), lineHeight: Math.round(size * 0.7) }}>{emoji}</RNText> : children}
     </View>
   );
 }

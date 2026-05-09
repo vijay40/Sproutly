@@ -15,7 +15,7 @@ export function GoogleSignInButton({ onPress, disabled, label = 'Continue with G
       accessibilityLabel={label}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, { opacity: disabled ? 0.4 : pressed ? 0.9 : 1 }]}
+      style={({ pressed }) => [styles.button, { opacity: disabled ? 0.4 : pressed ? 0.92 : 1 }]}
     >
       <GLogo />
       <Text style={styles.label}>{label}</Text>
@@ -25,7 +25,7 @@ export function GoogleSignInButton({ onPress, disabled, label = 'Continue with G
 
 function GLogo() {
   return (
-    <Svg width={18} height={18} viewBox="0 0 48 48" accessibilityElementsHidden>
+    <Svg width={20} height={20} viewBox="0 0 48 48" accessibilityElementsHidden>
       <Path
         fill="#4285F4"
         d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"
@@ -50,20 +50,18 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E8E9EC',
-    borderRadius: 999,
+    backgroundColor: '#F1F3F4',
+    borderRadius: 12,
     paddingHorizontal: 20,
     height: 52,
-    minWidth: 280,
-    alignSelf: 'center',
+    alignSelf: 'stretch',
   },
   label: {
-    fontFamily: 'LexendDeca-SemiBold',
-    fontSize: 15,
-    letterSpacing: 0,
-    color: '#24252C',
+    fontFamily: 'LexendDeca-Medium',
+    fontSize: 16,
+    letterSpacing: 0.1,
+    color: '#3C4043',
   },
 });

@@ -40,7 +40,7 @@ export function TaskRow({
   const resolvedTint = tint ?? tintFor(title);
   return (
     <Card variant={variant} style={[{ flexDirection: 'row', alignItems: 'center', gap: spacing.m }, style]}>
-      <IconTile tint={resolvedTint} size={40} emoji={icon ?? '•'} />
+      <IconTile tint={resolvedTint} size={36} radius={9} emoji={icon ?? '•'} />
 
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -55,7 +55,7 @@ export function TaskRow({
               style={{
                 marginLeft: spacing.xs,
                 paddingVertical: 2,
-                paddingHorizontal: 7,
+                paddingHorizontal: 8,
                 backgroundColor: colors.gold,
                 borderRadius: 10,
               }}
