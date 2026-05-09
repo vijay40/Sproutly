@@ -1,32 +1,25 @@
-import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, Text as RNText, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getParentClient } from '../../src/lib/supabase';
 import { setMode } from '../../src/lib/mode';
 import { tapLight } from '../../src/lib/haptics';
+import { friendlyLabel, gmtOffset, guessDeviceZone } from '../../src/lib/timezones';
 import {
   Body,
-  Card,
   Caption,
   Display,
   DropdownField,
-  IconTile,
+  EmojiPickerSheet,
   Icons,
   InputField,
   Label,
   PickerSheet,
   PrimaryButton,
   Screen,
+  TimezonePickerSheet,
 } from '../../src/ui';
 import { colors, spacing } from '../../src/theme/tokens';
-
-function guessTimezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch {
-    return 'UTC';
-  }
-}
 
 const AGE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 3).map((n) => ({
   value: n,
@@ -37,9 +30,13 @@ export default function ParentOnboarding() {
   const router = useRouter();
   const [childName, setChildName] = useState('');
   const [age, setAge] = useState<number | null>(null);
-  const [timezone] = useState(guessTimezone());
+  const [avatarEmoji, setAvatarEmoji] = useState<string>('🦄');
+  const detectedZone = useMemo(() => guessDeviceZone(), []);
+  const [timezone, setTimezone] = useState<string>(detectedZone);
   const [saving, setSaving] = useState(false);
   const [agePickerOpen, setAgePickerOpen] = useState(false);
+  const [tzPickerOpen, setTzPickerOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -72,7 +69,7 @@ export default function ParentOnboarding() {
 
     const { error: cErr } = await sb
       .from('children')
-      .insert({ family_id: family.id, name: childName.trim(), age });
+      .insert({ family_id: family.id, name: childName.trim(), age, avatar_emoji: avatarEmoji });
     if (cErr) {
       await sb.from('families').delete().eq('id', family.id);
       Alert.alert('Setup failed', cErr.message);
@@ -86,17 +83,64 @@ export default function ParentOnboarding() {
     router.replace('/(parent)/today');
   }
 
+  const tzDisplay = timezone
+    ? `${friendlyLabel(timezone)}${gmtOffset(timezone) ? ` · ${gmtOffset(timezone)}` : ''}`
+    : null;
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.white }}>
       <Screen>
-        <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={{ width: 36, height: 36, marginBottom: spacing.md }}>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityLabel="Back"
+          style={{ width: 36, height: 36, marginBottom: spacing.md }}
+        >
           <Icons.ArrowLeftIcon color={colors.ink} />
         </Pressable>
 
         <Display>Set up your family</Display>
-        <Body color="muted" style={{ marginTop: spacing.xs, marginBottom: spacing.xl }}>
+        <Body color="muted" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>
           We'll start with one child. You can add more later.
         </Body>
+
+        <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
+          <Pressable
+            onPress={() => {
+              tapLight();
+              setEmojiPickerOpen(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Change avatar"
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              backgroundColor: colors.purpleWash,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <RNText style={{ fontSize: 44, lineHeight: 54 }}>{avatarEmoji}</RNText>
+            <View
+              style={{
+                position: 'absolute',
+                right: -2,
+                bottom: -2,
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: colors.white,
+                borderWidth: 1.5,
+                borderColor: colors.purple,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icons.PencilIcon size={14} color={colors.purple} />
+            </View>
+          </Pressable>
+          <Caption style={{ marginTop: spacing.xs }}>Tap to change avatar</Caption>
+        </View>
 
         <View style={{ marginBottom: spacing.lg }}>
           <InputField label="CHILD NAME" value={childName} onChangeText={setChildName} placeholder="First name" />
@@ -111,13 +155,11 @@ export default function ParentOnboarding() {
         />
 
         <Label style={{ marginBottom: spacing.s }}>TIMEZONE</Label>
-        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl }}>
-          <IconTile tint="purpleWash" emoji="🕰️" />
-          <View style={{ flex: 1 }}>
-            <Body color="ink">{timezone}</Body>
-            <Caption style={{ marginTop: 2 }}>auto-detected · tap to change</Caption>
-          </View>
-        </Card>
+        <DropdownField
+          value={tzDisplay}
+          placeholder="Select timezone"
+          onPress={() => setTzPickerOpen(true)}
+        />
 
         <View style={{ flex: 1 }} />
 
@@ -137,6 +179,21 @@ export default function ParentOnboarding() {
         value={age}
         onSelect={(v) => setAge(v)}
         onClose={() => setAgePickerOpen(false)}
+      />
+
+      <TimezonePickerSheet
+        visible={tzPickerOpen}
+        value={timezone || null}
+        detectedZone={detectedZone}
+        onSelect={(v) => setTimezone(v)}
+        onClose={() => setTzPickerOpen(false)}
+      />
+
+      <EmojiPickerSheet
+        visible={emojiPickerOpen}
+        value={avatarEmoji}
+        onSelect={(v) => setAvatarEmoji(v)}
+        onClose={() => setEmojiPickerOpen(false)}
       />
     </KeyboardAvoidingView>
   );
