@@ -96,14 +96,14 @@ export default function Settings() {
 
       {child && (
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <IconTile tint="lavender" size={48} emoji="🦄" />
+          <IconTile tint="lavender" size={48} emoji={child.avatar_emoji ?? '🦄'} />
           <View style={{ flex: 1 }}>
             <BodyEmphasis>{child.name}</BodyEmphasis>
             <Caption style={{ marginTop: 2 }}>
               {child.age ? `Age ${child.age} · ` : ''}{timezone || ''}
             </Caption>
           </View>
-          <TextButton title="Edit" color="purple" onPress={() => Alert.alert('Edit profile', 'Coming soon.')} />
+          <TextButton title="Edit" color="purple" onPress={() => router.push('/(parent)/edit-profile')} />
         </Card>
       )}
 
