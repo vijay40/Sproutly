@@ -14,6 +14,7 @@ export interface ChildRow {
   family_id: string;
   name: string;
   age: number | null;
+  avatar_emoji: string | null;
   avatar_stage: number;
   successful_days: number;
   last_evaluated_date: string | null;
