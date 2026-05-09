@@ -19,6 +19,7 @@ export * from './MiniBarChart';
 export * from './InsightListItem';
 export * from './BottomSheet';
 export * from './PickerSheet';
+export * from './EmojiPickerSheet';
 export * from './DropdownField';
 export * from './PairCodeSheet';
 export * as Icons from './icons';
