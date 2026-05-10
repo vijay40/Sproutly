@@ -6,6 +6,7 @@ export * from './Toggle';
 export * from './InputField';
 export * from './SlotLabel';
 export * from './CodeEntry';
+export * from './PairCode';
 export * from './InsightCard';
 export * from './TaskRow';
 export * from './GoogleSignInButton';

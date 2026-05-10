@@ -5,6 +5,7 @@ import { colors, spacing } from '../theme/tokens';
 import { BodyEmphasis, Body, Caption, Text } from './Text';
 import { BottomSheet } from './BottomSheet';
 import { PrimaryButton } from './Button';
+import { PairCode } from './PairCode';
 import { tapLight, tapSuccess } from '../lib/haptics';
 
 interface Props {
@@ -20,12 +21,6 @@ function formatCountdown(ms: number): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-function formatCode(raw: string | null): string {
-  if (!raw) return '— — — — — —';
-  const clean = raw.replace(/\D/g, '').padEnd(6, ' ').slice(0, 6);
-  return `${clean.slice(0, 3)} ${clean.slice(3)}`;
 }
 
 const STEPS = [
@@ -77,17 +72,7 @@ export function PairCodeSheet({ visible, code, expiresAt, onClose }: Props) {
           alignItems: 'center',
         }}
       >
-        <Text
-          style={{
-            fontFamily: 'LexendDeca-Bold',
-            fontSize: 44,
-            lineHeight: 54,
-            color: colors.purple,
-            letterSpacing: 6,
-          }}
-        >
-          {formatCode(code)}
-        </Text>
+        <PairCode mode="display" code={code ?? ''} />
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
           <View
             style={{
