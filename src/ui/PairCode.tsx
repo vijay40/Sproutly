@@ -46,6 +46,7 @@ function Tile({
   height: number;
   digit: string;
 }) {
+  const filled = digit !== '';
   return (
     <View
       style={{
@@ -54,45 +55,52 @@ function Tile({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: TILE_RADIUS,
-        backgroundColor: colors.white,
+        backgroundColor: filled ? colors.white : colors.white,
         ...Platform.select({
           ios: {
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.06,
-            shadowRadius: 28,
+            shadowOpacity: filled ? 0.12 : 0.06,
+            shadowRadius: filled ? 20 : 28,
           },
-          android: { elevation: 3 },
+          android: { elevation: filled ? 4 : 3 },
           default: {},
         }),
       }}
     >
-      <Svg
-        width={width}
-        height={height}
-        style={StyleSheet.absoluteFillObject}
-      >
-        <Rect
-          x={TILE_STROKE / 2}
-          y={TILE_STROKE / 2}
-          width={width - TILE_STROKE}
-          height={height - TILE_STROKE}
-          rx={TILE_RADIUS - TILE_STROKE / 2}
-          ry={TILE_RADIUS - TILE_STROKE / 2}
-          fill="none"
-          stroke={DASH_COLOR}
-          strokeWidth={TILE_STROKE}
-          strokeDasharray="6 4"
-          strokeLinecap="butt"
+      {filled ? (
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            borderRadius: TILE_RADIUS,
+            borderWidth: TILE_STROKE,
+            borderColor: colors.purple,
+          }}
         />
-      </Svg>
-      {digit ? (
+      ) : (
+        <Svg width={width} height={height} style={StyleSheet.absoluteFillObject}>
+          <Rect
+            x={TILE_STROKE / 2}
+            y={TILE_STROKE / 2}
+            width={width - TILE_STROKE}
+            height={height - TILE_STROKE}
+            rx={TILE_RADIUS - TILE_STROKE / 2}
+            ry={TILE_RADIUS - TILE_STROKE / 2}
+            fill="none"
+            stroke={DASH_COLOR}
+            strokeWidth={TILE_STROKE}
+            strokeDasharray="6 4"
+            strokeLinecap="butt"
+          />
+        </Svg>
+      )}
+      {filled ? (
         <Text
           style={{
             fontFamily: 'LexendDeca-Bold',
             fontSize: Math.round(height * 0.44),
             lineHeight: Math.round(height * 0.52),
-            color: colors.ink,
+            color: colors.purple,
           }}
         >
           {digit}
@@ -148,7 +156,6 @@ export function PairCode(props: Props) {
         }}
         keyboardType="number-pad"
         maxLength={LEN}
-        autoFocus
         style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
       />
     </Pressable>
