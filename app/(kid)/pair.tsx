@@ -1,21 +1,13 @@
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { saveKidAuth } from '../../src/lib/secureStore';
 import { setMode } from '../../src/lib/mode';
 import { resetClients } from '../../src/lib/supabase';
 import { getPairingRedeemUrl } from '../../src/lib/server';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
-import {
-  Body,
-  Caption,
-  CodeEntry,
-  Display,
-  IconTile,
-  Icons,
-  Screen,
-} from '../../src/ui';
-import { colors, spacing } from '../../src/theme/tokens';
+import { PrePairScene } from '../../src/ui/kid/scenes/PrePairScene';
+import { FRAME_W } from '../../src/ui/kid/theme';
 
 export default function KidPair() {
   const [code, setCode] = useState('');
@@ -59,24 +51,15 @@ export default function KidPair() {
   }
 
   return (
-    <Screen scroll={false}>
-      <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={{ width: 36, height: 36, marginBottom: spacing.lg }}>
-        <Icons.ArrowLeftIcon color={colors.ink} />
-      </Pressable>
-
-      <View style={{ alignItems: 'center', marginBottom: spacing.xl }}>
-        <IconTile tint="sky" size={80} style={{ borderRadius: 40, marginBottom: spacing.md }} emoji="📱" />
-        <Display style={{ textAlign: 'center' }}>Pair this iPad</Display>
-        <Body color="muted" style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 300 }}>
-          Enter the 6-digit code from your phone.{'\n'}Settings → Pair iPad.
-        </Body>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: FRAME_W, height: 'auto' }}>
+        <PrePairScene
+          code={code}
+          onChangeCode={(v) => { tapLight(); setCode(v); }}
+          onSubmit={() => void redeem()}
+          loading={loading}
+        />
       </View>
-
-      <CodeEntry value={code} onChange={(v) => { tapLight(); setCode(v); }} onSubmit={() => void redeem()} />
-
-      <Caption style={{ textAlign: 'center', marginTop: spacing.lg }}>
-        {loading ? 'Pairing…' : code.length === 6 ? 'Tap to continue' : 'Tap the last box to continue.'}
-      </Caption>
-    </Screen>
+    </View>
   );
 }

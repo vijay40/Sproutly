@@ -52,7 +52,7 @@ export default function ModeChooser() {
           fullWidth
           onPress={() => {
             tapLight();
-            router.push('/(first-launch)/kid-pair');
+            router.push('/(kid)/pair');
           }}
         />
         <Text kind="caption" color="muted" style={{ textAlign: 'center', marginTop: spacing.s }}>
