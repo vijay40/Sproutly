@@ -1,16 +1,16 @@
 import { useRef } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Rect } from 'react-native-svg';
 import { colors } from '../theme/tokens';
 import { Text } from './Text';
 
 /**
- * Scalloped 6-digit pair-code tiles. Two modes:
+ * 6-digit pair-code tiles. Two modes:
  *   - mode="display" — read-only (phone shows the code for the kid to see)
  *   - mode="entry"   — focus-managed (iPad types the code in)
  *
- * Shape matches the K1 Figma frame: scalloped/cloud outline, white fill, subtle drop shadow.
- * Digit typography is Lexend Deca Bold, centered.
+ * Shape matches the K1 Figma frame: rounded white tile with a dashed inner border
+ * and a small purple dot placeholder (replaced by the digit once typed).
  */
 
 type DisplayProps = {
@@ -33,45 +33,6 @@ type Props = DisplayProps | EntryProps;
 
 const LEN = 6;
 
-/**
- * Builds a scalloped-rect SVG path — a rectangle with small half-circle
- * bumps marching along each edge. Corners are smooth quarter-circles.
- */
-function scallopedPath(w: number, h: number, bumpR: number): string {
-  const cornerR = bumpR * 1.6;
-  const topEdge = w - cornerR * 2;
-  const sideEdge = h - cornerR * 2;
-  const bumpsX = Math.max(1, Math.round(topEdge / (bumpR * 2)));
-  const bumpsY = Math.max(1, Math.round(sideEdge / (bumpR * 2)));
-  const stepX = topEdge / bumpsX;
-  const stepY = sideEdge / bumpsY;
-
-  const parts: string[] = [];
-  parts.push(`M ${cornerR} 0`);
-  for (let i = 0; i < bumpsX; i++) {
-    const x = cornerR + (i + 1) * stepX;
-    parts.push(`A ${stepX / 2} ${bumpR} 0 0 1 ${x} 0`);
-  }
-  parts.push(`A ${cornerR} ${cornerR} 0 0 1 ${w} ${cornerR}`);
-  for (let i = 0; i < bumpsY; i++) {
-    const y = cornerR + (i + 1) * stepY;
-    parts.push(`A ${bumpR} ${stepY / 2} 0 0 1 ${w} ${y}`);
-  }
-  parts.push(`A ${cornerR} ${cornerR} 0 0 1 ${w - cornerR} ${h}`);
-  for (let i = 0; i < bumpsX; i++) {
-    const x = w - cornerR - (i + 1) * stepX;
-    parts.push(`A ${stepX / 2} ${bumpR} 0 0 1 ${x} ${h}`);
-  }
-  parts.push(`A ${cornerR} ${cornerR} 0 0 1 0 ${h - cornerR}`);
-  for (let i = 0; i < bumpsY; i++) {
-    const y = h - cornerR - (i + 1) * stepY;
-    parts.push(`A ${bumpR} ${stepY / 2} 0 0 1 0 ${y}`);
-  }
-  parts.push(`A ${cornerR} ${cornerR} 0 0 1 ${cornerR} 0`);
-  parts.push('Z');
-  return parts.join(' ');
-}
-
 function Tile({
   width,
   height,
@@ -83,25 +44,41 @@ function Tile({
   digit: string;
   active: boolean;
 }) {
-  const path = scallopedPath(width, height, Math.max(4, Math.round(width / 10)));
+  const outerRadius = Math.round(Math.min(width, height) * 0.24);
+  const innerInset = 6;
+  const innerRadius = Math.max(4, outerRadius - innerInset);
+  const dotSize = Math.max(6, Math.round(width / 7));
   const fill = active && !digit ? colors.purpleWash : colors.white;
-  const stroke = active ? colors.purple : colors.gray100;
+  const dashStroke = active ? colors.purple : colors.purpleWash;
 
   return (
-    <View
-      style={{
-        width,
-        height,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: fill,
+          borderRadius: outerRadius,
+        }}
+      />
       <Svg
-        width={width}
-        height={height}
-        style={{ position: 'absolute', left: 0, top: 0 }}
+        width={width - innerInset * 2}
+        height={height - innerInset * 2}
+        style={{ position: 'absolute', left: innerInset, top: innerInset }}
       >
-        <Path d={path} fill={fill} stroke={stroke} strokeWidth={1.5} />
+        <Rect
+          x={1}
+          y={1}
+          width={width - innerInset * 2 - 2}
+          height={height - innerInset * 2 - 2}
+          rx={innerRadius}
+          ry={innerRadius}
+          fill="none"
+          stroke={dashStroke}
+          strokeWidth={2}
+          strokeDasharray="6 5"
+          strokeLinecap="round"
+        />
       </Svg>
       {digit ? (
         <Text
@@ -117,8 +94,8 @@ function Tile({
       ) : (
         <View
           style={{
-            width: Math.max(4, Math.round(width / 10)),
-            height: Math.max(4, Math.round(width / 10)),
+            width: dotSize,
+            height: dotSize,
             borderRadius: 999,
             backgroundColor: colors.purpleWash,
           }}
