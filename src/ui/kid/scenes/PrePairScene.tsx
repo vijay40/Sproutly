@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Text, View, useWindowDimensions } from 'react-native';
 import { BackgroundBlobs } from '../parts/BackgroundBlobs';
 import { AvatarOrb } from '../parts/AvatarOrb';
 import { CodeEntry } from '../../CodeEntry';
-import { FRAME_H, FRAME_W, kidInk, kidMuted, kidPurple, kidPurpleWash, kidWhite, slotGradients } from '../theme';
+import { kidInk, kidMuted, kidPurple, kidPurpleWash, kidWhite, slotGradients } from '../theme';
 
 export function PrePairScene({
   code,
@@ -16,6 +16,8 @@ export function PrePairScene({
   onSubmit: () => void;
   loading: boolean;
 }) {
+  const { width, height } = useWindowDimensions();
+  const landscape = width > height;
   const dotOpacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -32,72 +34,82 @@ export function PrePairScene({
   return (
     <View
       style={{
-        width: FRAME_W,
-        height: FRAME_H,
+        flex: 1,
         backgroundColor: slotGradients.default.from,
-        borderRadius: 40,
         overflow: 'hidden',
         position: 'relative',
       }}
     >
       <BackgroundBlobs />
 
-      {/* Left column */}
-      <Text style={{ position: 'absolute', left: 64, top: 120, fontSize: 44, color: kidMuted, fontFamily: 'LexendDeca-SemiBold' }}>
-        Hi there! 👋
-      </Text>
-      <Text style={{ position: 'absolute', left: 64, top: 180, fontSize: 52, lineHeight: 60, color: kidInk, fontFamily: 'LexendDeca-Bold' }}>
-        Ask a grown-up{'\n'}to pair this iPad
-      </Text>
-
-      <View style={{ position: 'absolute', left: 64, top: 340 }}>
-        <CodeEntry value={code} onChange={onChangeCode} onSubmit={onSubmit} />
-      </View>
-
-      <Text style={{ position: 'absolute', left: 64, top: 452, fontSize: 18, color: kidMuted, fontFamily: 'LexendDeca-Regular' }}>
-        They&rsquo;ll find the code in Settings on their phone.
-      </Text>
-
       <View
         style={{
-          position: 'absolute',
-          left: 64,
-          top: 560,
-          backgroundColor: kidWhite,
-          paddingHorizontal: 20,
-          paddingVertical: 12,
-          borderRadius: 24,
-          flexDirection: 'row',
+          flex: 1,
+          flexDirection: landscape ? 'row' : 'column',
+          paddingHorizontal: 40,
+          paddingVertical: 40,
           alignItems: 'center',
-          gap: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.06,
-          shadowRadius: 28,
         }}
       >
-        <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: kidPurple, opacity: dotOpacity }} />
-        <Text style={{ color: kidInk, fontSize: 16, fontFamily: 'LexendDeca-Medium' }}>
-          {loading ? 'Pairing…' : 'Waiting for a grown-up…'}
-        </Text>
-      </View>
+        <View style={{ flex: 1, justifyContent: 'center', gap: 24, maxWidth: landscape ? undefined : 520 }}>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: landscape ? 40 : 32, color: kidMuted, fontFamily: 'LexendDeca-SemiBold' }}>
+              Hi there! 👋
+            </Text>
+            <Text
+              style={{
+                fontSize: landscape ? 48 : 36,
+                lineHeight: landscape ? 56 : 44,
+                color: kidInk,
+                fontFamily: 'LexendDeca-Bold',
+              }}
+            >
+              Ask a grown-up{'\n'}to pair this iPad
+            </Text>
+          </View>
 
-      {/* Right column */}
-      <View style={{ position: 'absolute', left: 706, top: 200 }}>
-        <AvatarOrb emoji="🥚" />
-      </View>
-      <View
-        style={{
-          position: 'absolute',
-          left: 845,
-          top: 652,
-          backgroundColor: kidPurpleWash,
-          paddingHorizontal: 20,
-          paddingVertical: 10,
-          borderRadius: 22,
-        }}
-      >
-        <Text style={{ color: kidPurple, fontSize: 14, fontFamily: 'LexendDeca-SemiBold' }}>Not paired yet</Text>
+          <CodeEntry value={code} onChange={onChangeCode} onSubmit={onSubmit} />
+
+          <Text style={{ fontSize: 16, color: kidMuted, fontFamily: 'LexendDeca-Regular' }}>
+            They&rsquo;ll find the code in Settings on their phone.
+          </Text>
+
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              backgroundColor: kidWhite,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              borderRadius: 24,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.06,
+              shadowRadius: 28,
+            }}
+          >
+            <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: kidPurple, opacity: dotOpacity }} />
+            <Text style={{ color: kidInk, fontSize: 16, fontFamily: 'LexendDeca-Medium' }}>
+              {loading ? 'Pairing…' : 'Waiting for a grown-up…'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 24 }}>
+          <AvatarOrb emoji="🥚" />
+          <View
+            style={{
+              backgroundColor: kidPurpleWash,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              borderRadius: 22,
+            }}
+          >
+            <Text style={{ color: kidPurple, fontSize: 14, fontFamily: 'LexendDeca-SemiBold' }}>Not paired yet</Text>
+          </View>
+        </View>
       </View>
     </View>
   );

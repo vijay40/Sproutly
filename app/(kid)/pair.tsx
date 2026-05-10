@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Keyboard, TouchableWithoutFeedback, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { saveKidAuth } from '../../src/lib/secureStore';
 import { setMode } from '../../src/lib/mode';
@@ -7,7 +7,6 @@ import { resetClients } from '../../src/lib/supabase';
 import { getPairingRedeemUrl } from '../../src/lib/server';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
 import { PrePairScene } from '../../src/ui/kid/scenes/PrePairScene';
-import { FRAME_W } from '../../src/ui/kid/theme';
 
 export default function KidPair() {
   const [code, setCode] = useState('');
@@ -51,8 +50,8 @@ export default function KidPair() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: FRAME_W }}>
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
+      <View style={{ flex: 1 }}>
         <PrePairScene
           code={code}
           onChangeCode={(v) => { tapLight(); setCode(v); }}
@@ -60,6 +59,6 @@ export default function KidPair() {
           loading={loading}
         />
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }

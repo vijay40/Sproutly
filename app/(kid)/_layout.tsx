@@ -1,18 +1,10 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import { getKidToken } from '../../src/lib/secureStore';
 
 export default function KidLayout() {
   const router = useRouter();
   const segments = useSegments();
-
-  useEffect(() => {
-    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    return () => {
-      void ScreenOrientation.unlockAsync();
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
