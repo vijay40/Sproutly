@@ -46,7 +46,7 @@ function Tile({
 }) {
   const radius = Math.round(Math.min(width, height) * 0.24);
   const dotSize = Math.max(6, Math.round(width / 7));
-  const fill = active && !digit ? colors.purpleWash : colors.white;
+  const fill = digit ? colors.white : active ? colors.purpleWash : 'transparent';
   const dashStroke = active ? colors.purple : '#CFC4F7';
   const strokeW = 2;
 
