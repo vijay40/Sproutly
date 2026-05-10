@@ -44,39 +44,26 @@ function Tile({
   digit: string;
   active: boolean;
 }) {
-  const outerRadius = Math.round(Math.min(width, height) * 0.24);
-  const innerInset = 6;
-  const innerRadius = Math.max(4, outerRadius - innerInset);
+  const radius = Math.round(Math.min(width, height) * 0.24);
   const dotSize = Math.max(6, Math.round(width / 7));
   const fill = active && !digit ? colors.purpleWash : colors.white;
-  const dashStroke = active ? colors.purple : colors.purpleWash;
+  const dashStroke = active ? colors.purple : '#CFC4F7';
+  const strokeW = 2;
 
   return (
     <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
-      <View
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundColor: fill,
-          borderRadius: outerRadius,
-        }}
-      />
-      <Svg
-        width={width - innerInset * 2}
-        height={height - innerInset * 2}
-        style={{ position: 'absolute', left: innerInset, top: innerInset }}
-      >
+      <Svg width={width} height={height} style={{ position: 'absolute', left: 0, top: 0 }}>
         <Rect
-          x={1}
-          y={1}
-          width={width - innerInset * 2 - 2}
-          height={height - innerInset * 2 - 2}
-          rx={innerRadius}
-          ry={innerRadius}
-          fill="none"
+          x={strokeW / 2}
+          y={strokeW / 2}
+          width={width - strokeW}
+          height={height - strokeW}
+          rx={radius}
+          ry={radius}
+          fill={fill}
           stroke={dashStroke}
-          strokeWidth={2}
-          strokeDasharray="6 5"
+          strokeWidth={strokeW}
+          strokeDasharray="5 5"
           strokeLinecap="round"
         />
       </Svg>
@@ -97,7 +84,7 @@ function Tile({
             width: dotSize,
             height: dotSize,
             borderRadius: 999,
-            backgroundColor: colors.purpleWash,
+            backgroundColor: '#CFC4F7',
           }}
         />
       )}
