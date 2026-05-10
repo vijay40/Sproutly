@@ -97,7 +97,16 @@ function Tile({
         >
           {digit}
         </Text>
-      ) : null}
+      ) : (
+        <View
+          style={{
+            width: Math.max(6, Math.round(width / 8)),
+            height: Math.max(6, Math.round(width / 8)),
+            borderRadius: 999,
+            backgroundColor: DASH_COLOR,
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -111,7 +120,7 @@ export function PairCode(props: Props) {
   const digits = Array.from({ length: LEN }, (_, i) => code[i] ?? '');
 
   const tileRow = (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
+    <View style={{ flexDirection: 'row', gap: 10 }}>
       {digits.map((d, i) => (
         <Tile key={i} width={tileWidth} height={tileHeight} digit={d} />
       ))}
@@ -123,7 +132,11 @@ export function PairCode(props: Props) {
   }
 
   return (
-    <Pressable onPress={() => inputRef.current?.focus()} accessibilityLabel="Enter 6-digit pairing code">
+    <Pressable
+      onPress={() => inputRef.current?.focus()}
+      accessibilityLabel="Enter 6-digit pairing code"
+      style={{ alignSelf: 'flex-start' }}
+    >
       {tileRow}
       <TextInput
         ref={inputRef}
