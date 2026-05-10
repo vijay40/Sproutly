@@ -1,76 +1,58 @@
-import { useCallback, useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { getKidClient } from '../../src/lib/supabase';
-import { getKidChildId } from '../../src/lib/secureStore';
-import { isTaskScheduledOn } from '../../src/domain/tasks';
-import { todayLocalDate } from '../../src/lib/time';
-import type { ChildRow, FamilyRow, TaskRow } from '../../src/types/db';
+import { ActivityIndicator, View } from 'react-native';
+import { useKidScreenState } from '../../src/hooks/useKidScreenState';
+import { TodayScene } from '../../src/ui/kid/scenes/TodayScene';
+import { GreetingScene } from '../../src/ui/kid/scenes/GreetingScene';
+import { AllDoneScene } from '../../src/ui/kid/scenes/AllDoneScene';
+import { CelebrationScene } from '../../src/ui/kid/scenes/CelebrationScene';
+import { EvolutionScene } from '../../src/ui/kid/scenes/EvolutionScene';
+import { CornerOfflineDot } from '../../src/ui/kid/parts/CornerOfflineDot';
+import { FRAME_H, FRAME_W } from '../../src/ui/kid/theme';
+import type { KidState } from '../../src/domain/kidScreenState';
+
+function renderScene(state: KidState, onEvolutionFinished: () => void): React.ReactElement {
+  switch (state.kind) {
+    case 'greeting':
+      return <GreetingScene slot={state.slot} child={state.child} />;
+    case 'today':
+      return <TodayScene tasks={state.tasks} completions={state.completions} child={state.child} family={state.family} />;
+    case 'simplified':
+      return <TodayScene tasks={state.tasks} completions={state.completions} child={state.child} family={state.family} />;
+    case 'all-done':
+      return <AllDoneScene child={state.child} variant={state.variant} />;
+    case 'evolution':
+      return <EvolutionScene from={state.from} to={state.to} child={state.child} onComplete={onEvolutionFinished} />;
+    case 'celebration':
+      return (
+        <CelebrationScene>
+          {renderScene(state.underlying, onEvolutionFinished)}
+        </CelebrationScene>
+      );
+  }
+}
+
+function isOffline(state: KidState): boolean {
+  if (state.kind === 'today' || state.kind === 'simplified' || state.kind === 'all-done') return state.offline;
+  if (state.kind === 'celebration') return isOffline(state.underlying);
+  return false;
+}
 
 export default function Display() {
-  const [child, setChild] = useState<ChildRow | null>(null);
-  const [family, setFamily] = useState<FamilyRow | null>(null);
-  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const { state, ready, onEvolutionFinished } = useKidScreenState();
 
-  useFocusEffect(
-    useCallback(() => {
-      void (async () => {
-        const childId = await getKidChildId();
-        if (!childId) return;
-        const sb = await getKidClient();
-        const [{ data: c }, { data: f }, { data: t }] = await Promise.all([
-          sb.from('children').select('*').eq('id', childId).maybeSingle(),
-          sb.from('families').select('*').maybeSingle(),
-          sb.from('tasks').select('*').eq('child_id', childId).eq('is_active', true),
-        ]);
-        setChild((c as ChildRow | null) ?? null);
-        setFamily((f as FamilyRow | null) ?? null);
-        const fam = f as FamilyRow | null;
-        const now = new Date();
-        setTasks(
-          ((t ?? []) as TaskRow[]).filter(
-            (x) => !x.is_bonus && fam && isTaskScheduledOn(x, now, fam.timezone),
-          ),
-        );
-      })();
-    }, []),
-  );
-
-  if (!child || !family) {
+  if (!ready || !state) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text>Waiting for data…</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' }}>
+        <ActivityIndicator />
       </View>
     );
   }
 
-  const today = todayLocalDate(family.timezone);
-
   return (
-    <View style={{ flex: 1, padding: 24 }}>
-      <Text style={{ fontSize: 28, textAlign: 'center' }}>Hi, {child.name}!</Text>
-      <Text style={{ textAlign: 'center', color: '#666', marginBottom: 16 }}>
-        Stage {child.avatar_stage} · {today}
-      </Text>
-      <FlatList
-        data={tasks.slice(0, 3)}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={{
-              padding: 16,
-              borderWidth: 2,
-              borderColor: '#ddd',
-              borderRadius: 12,
-              marginBottom: 12,
-            }}
-          >
-            <Text style={{ fontSize: 48, textAlign: 'center' }}>{item.icon ?? '•'}</Text>
-            <Text style={{ fontSize: 24, textAlign: 'center' }}>{item.title}</Text>
-          </View>
-        )}
-        ListEmptyComponent={<Text style={{ textAlign: 'center' }}>All done for today!</Text>}
-      />
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: FRAME_W, height: FRAME_H, position: 'relative' }}>
+        {renderScene(state, onEvolutionFinished)}
+        {isOffline(state) && <CornerOfflineDot />}
+      </View>
     </View>
   );
 }
