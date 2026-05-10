@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { colors } from '../theme/tokens';
 import { Text } from './Text';
@@ -33,42 +33,56 @@ type Props = DisplayProps | EntryProps;
 
 const LEN = 6;
 
+const TILE_RADIUS = 18;
+const TILE_STROKE = 2;
+const DASH_COLOR = '#EEE9FF';
+
 function Tile({
   width,
   height,
   digit,
-  active,
 }: {
   width: number;
   height: number;
   digit: string;
-  active: boolean;
 }) {
-  const radius = Math.round(Math.min(width, height) * 0.28);
-  const dotSize = Math.max(6, Math.round(width / 7));
-  const hasFill = digit || active;
-  const fill = digit ? colors.white : active ? colors.purpleWash : 'none';
-  const dashStroke = active ? colors.purple : '#CFC4F7';
-  const strokeW = 2;
-
   return (
-    <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{
+        width,
+        height,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: TILE_RADIUS,
+        backgroundColor: colors.white,
+        ...Platform.select({
+          ios: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.06,
+            shadowRadius: 28,
+          },
+          android: { elevation: 3 },
+          default: {},
+        }),
+      }}
+    >
       <Svg
-        width={width + strokeW}
-        height={height + strokeW}
-        style={{ position: 'absolute', left: -strokeW / 2, top: -strokeW / 2 }}
+        width={width}
+        height={height}
+        style={StyleSheet.absoluteFillObject}
       >
         <Rect
-          x={strokeW / 2}
-          y={strokeW / 2}
-          width={width}
-          height={height}
-          rx={radius}
-          ry={radius}
-          fill={hasFill ? fill : 'none'}
-          stroke={dashStroke}
-          strokeWidth={strokeW}
-          strokeDasharray="8 6"
+          x={TILE_STROKE / 2}
+          y={TILE_STROKE / 2}
+          width={width - TILE_STROKE}
+          height={height - TILE_STROKE}
+          rx={TILE_RADIUS - TILE_STROKE / 2}
+          ry={TILE_RADIUS - TILE_STROKE / 2}
+          fill="none"
+          stroke={DASH_COLOR}
+          strokeWidth={TILE_STROKE}
+          strokeDasharray="6 4"
           strokeLinecap="butt"
         />
       </Svg>
@@ -83,16 +97,7 @@ function Tile({
         >
           {digit}
         </Text>
-      ) : (
-        <View
-          style={{
-            width: dotSize,
-            height: dotSize,
-            borderRadius: 999,
-            backgroundColor: '#CFC4F7',
-          }}
-        />
-      )}
+      ) : null}
     </View>
   );
 }
@@ -104,18 +109,11 @@ export function PairCode(props: Props) {
 
   const code = props.mode === 'display' ? props.code : props.value;
   const digits = Array.from({ length: LEN }, (_, i) => code[i] ?? '');
-  const activeIndex = props.mode === 'entry' ? code.length : -1;
 
   const tileRow = (
     <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
       {digits.map((d, i) => (
-        <Tile
-          key={i}
-          width={tileWidth}
-          height={tileHeight}
-          digit={d}
-          active={i === activeIndex}
-        />
+        <Tile key={i} width={tileWidth} height={tileHeight} digit={d} />
       ))}
     </View>
   );
