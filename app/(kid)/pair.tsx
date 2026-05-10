@@ -52,7 +52,7 @@ export default function KidPair() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: FRAME_W, height: 'auto' }}>
+      <View style={{ width: FRAME_W }}>
         <PrePairScene
           code={code}
           onChangeCode={(v) => { tapLight(); setCode(v); }}
