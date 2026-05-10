@@ -44,27 +44,32 @@ function Tile({
   digit: string;
   active: boolean;
 }) {
-  const radius = Math.round(Math.min(width, height) * 0.24);
+  const radius = Math.round(Math.min(width, height) * 0.28);
   const dotSize = Math.max(6, Math.round(width / 7));
-  const fill = digit ? colors.white : active ? colors.purpleWash : 'transparent';
+  const hasFill = digit || active;
+  const fill = digit ? colors.white : active ? colors.purpleWash : 'none';
   const dashStroke = active ? colors.purple : '#CFC4F7';
   const strokeW = 2;
 
   return (
     <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={width} height={height} style={{ position: 'absolute', left: 0, top: 0 }}>
+      <Svg
+        width={width + strokeW}
+        height={height + strokeW}
+        style={{ position: 'absolute', left: -strokeW / 2, top: -strokeW / 2 }}
+      >
         <Rect
           x={strokeW / 2}
           y={strokeW / 2}
-          width={width - strokeW}
-          height={height - strokeW}
+          width={width}
+          height={height}
           rx={radius}
           ry={radius}
-          fill={fill}
+          fill={hasFill ? fill : 'none'}
           stroke={dashStroke}
           strokeWidth={strokeW}
-          strokeDasharray="5 5"
-          strokeLinecap="round"
+          strokeDasharray="8 6"
+          strokeLinecap="butt"
         />
       </Svg>
       {digit ? (
