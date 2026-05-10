@@ -43,7 +43,7 @@ export default function RootLayout() {
         return;
       }
       const inGroup = segments[0];
-      if (stored === null && inGroup !== '(first-launch)') {
+      if (stored === null && inGroup !== '(first-launch)' && inGroup !== '(kid)') {
         router.replace('/(first-launch)');
       } else if (stored === 'parent') {
         const { data: family } = await getParentClient().from('families').select('id').limit(1);
