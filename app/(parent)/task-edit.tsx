@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getParentClient } from '../../src/lib/supabase';
+import { api } from '../../src/lib/api';
 import { tapLight } from '../../src/lib/haptics';
 import type { Recurrence, TaskRow, TimeSlot } from '../../src/types/db';
 import {
@@ -53,11 +53,11 @@ export default function TaskEdit() {
 
   useEffect(() => {
     void (async () => {
-      const sb = getParentClient();
-      const { data: children } = await sb.from('children').select('id').limit(1);
-      setChildId(children?.[0]?.id ?? null);
+      const children = await api.children.list();
+      setChildId(children[0]?.id ?? null);
       if (!editing) return;
-      const { data: row } = await sb.from('tasks').select('*').eq('id', id).single();
+      const rows = await api.tasks.list({ is_active: 'all' });
+      const row = rows.find((t) => t.id === id);
       if (!row) return;
       const r = row as TaskRow;
       setTitle(r.title);
@@ -91,15 +91,18 @@ export default function TaskEdit() {
       recurrence_days: recurrence === 'custom' ? days : null,
       is_bonus: isBonus,
     };
-    const sb = getParentClient();
-    const { error } = editing
-      ? await sb.from('tasks').update(payload).eq('id', id)
-      : await sb.from('tasks').insert({ ...payload, child_id: childId });
-    setSaving(false);
-    if (error) {
-      Alert.alert('Error', error.message);
+    try {
+      if (editing) {
+        await api.tasks.update(String(id), payload);
+      } else {
+        await api.tasks.create({ ...payload, child_id: childId });
+      }
+    } catch (e) {
+      setSaving(false);
+      Alert.alert('Error', e instanceof Error ? e.message : 'Unknown error');
       return;
     }
+    setSaving(false);
     tapLight();
     router.back();
   }
@@ -112,8 +115,12 @@ export default function TaskEdit() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await getParentClient().from('tasks').update({ is_active: false }).eq('id', id);
-          router.back();
+          try {
+            await api.tasks.softDelete(String(id));
+            router.back();
+          } catch {
+            Alert.alert('Error', 'Could not delete task');
+          }
         },
       },
     ]);

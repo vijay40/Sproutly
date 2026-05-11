@@ -4,7 +4,12 @@ import {
   extendZodWithOpenApi,
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
+import { registerChildren } from './endpoints/children.js';
+import { registerCosmetics } from './endpoints/cosmetics.js';
+import { registerDailySummaries } from './endpoints/daily-summaries.js';
 import { registerDev } from './endpoints/dev.js';
+import { registerInsights } from './endpoints/insights.js';
+import { registerTasks } from './endpoints/tasks.js';
 import { registerHealth } from './endpoints/health.js';
 import { registerMe } from './endpoints/me.js';
 
@@ -22,6 +27,11 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
 
   registerHealth(registry);
   registerMe(registry);
+  registerChildren(registry);
+  registerTasks(registry);
+  registerCosmetics(registry);
+  registerDailySummaries(registry);
+  registerInsights(registry);
   registerDev(registry);
 
   registry.registerPath({

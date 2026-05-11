@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { getParentClient } from '../../src/lib/supabase';
+import { api } from '../../src/lib/api';
 import { tapLight } from '../../src/lib/haptics';
 import type { TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
 import {
@@ -47,9 +47,8 @@ export default function TasksScreen() {
   useFocusEffect(
     useCallback(() => {
       void (async () => {
-        const sb = getParentClient();
-        const { data: ts } = await sb.from('tasks').select('*').eq('is_active', true).order('created_at', { ascending: false });
-        setTasks(((ts ?? []) as TaskRowType[]));
+        const ts = await api.tasks.list({ is_active: 'true' });
+        setTasks(ts as TaskRowType[]);
       })();
     }, []),
   );

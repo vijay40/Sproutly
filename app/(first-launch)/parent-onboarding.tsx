@@ -71,12 +71,15 @@ export default function ParentOnboarding() {
       .single();
     if (fErr || !family) { Alert.alert('Setup failed', fErr?.message ?? 'Unknown error'); setSaving(false); return; }
 
-    const { error: cErr } = await sb
-      .from('children')
-      .insert({ family_id: family.id, name: childName.trim(), age, avatar_emoji: avatarEmoji });
-    if (cErr) {
+    try {
+      await api.children.create({
+        name: childName.trim(),
+        age,
+        avatar_emoji: avatarEmoji,
+      });
+    } catch (e) {
       await sb.from('families').delete().eq('id', family.id);
-      Alert.alert('Setup failed', cErr.message);
+      Alert.alert('Setup failed', e instanceof Error ? e.message : 'Unknown error');
       setSaving(false);
       return;
     }

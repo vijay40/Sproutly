@@ -108,6 +108,886 @@ paths:
                   - family_id
                   - timezone
                   - has_onboarded
+  /children:
+    get:
+      summary: List children in the current family
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    family_id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    age:
+                      type:
+                        - integer
+                        - "null"
+                    avatar_emoji:
+                      type:
+                        - string
+                        - "null"
+                    avatar_stage:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+                    successful_days:
+                      type: integer
+                    last_evaluated_date:
+                      type:
+                        - string
+                        - "null"
+                      pattern: ^\d{4}-\d{2}-\d{2}$
+                    pending_stage_transition:
+                      type: boolean
+                    cosmetics: {}
+                    equipped_cosmetics: {}
+                    created_at:
+                      type: string
+                      format: date-time
+                  required:
+                    - id
+                    - family_id
+                    - name
+                    - age
+                    - avatar_emoji
+                    - avatar_stage
+                    - successful_days
+                    - last_evaluated_date
+                    - pending_stage_transition
+                    - created_at
+    post:
+      summary: "Create a child (V1: one child per family)"
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                age:
+                  type: integer
+                  minimum: 3
+                  maximum: 12
+                avatar_stage:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                avatar_emoji:
+                  type: string
+                cosmetics: {}
+                equipped_cosmetics: {}
+              required:
+                - name
+              additionalProperties: false
+            examples:
+              default:
+                value:
+                  name: Alex
+                  age: 7
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  family_id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  age:
+                    type:
+                      - integer
+                      - "null"
+                  avatar_emoji:
+                    type:
+                      - string
+                      - "null"
+                  avatar_stage:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                  successful_days:
+                    type: integer
+                  last_evaluated_date:
+                    type:
+                      - string
+                      - "null"
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  pending_stage_transition:
+                    type: boolean
+                  cosmetics: {}
+                  equipped_cosmetics: {}
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - family_id
+                  - name
+                  - age
+                  - avatar_emoji
+                  - avatar_stage
+                  - successful_days
+                  - last_evaluated_date
+                  - pending_stage_transition
+                  - created_at
+  /children/{id}:
+    patch:
+      summary: Partially update a child
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: id
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                age:
+                  type:
+                    - integer
+                    - "null"
+                  minimum: 3
+                  maximum: 12
+                avatar_stage:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                avatar_emoji:
+                  type:
+                    - string
+                    - "null"
+                cosmetics: {}
+                equipped_cosmetics: {}
+              additionalProperties: false
+            examples:
+              stage:
+                value:
+                  avatar_stage: 2
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  family_id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  age:
+                    type:
+                      - integer
+                      - "null"
+                  avatar_emoji:
+                    type:
+                      - string
+                      - "null"
+                  avatar_stage:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                  successful_days:
+                    type: integer
+                  last_evaluated_date:
+                    type:
+                      - string
+                      - "null"
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  pending_stage_transition:
+                    type: boolean
+                  cosmetics: {}
+                  equipped_cosmetics: {}
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - family_id
+                  - name
+                  - age
+                  - avatar_emoji
+                  - avatar_stage
+                  - successful_days
+                  - last_evaluated_date
+                  - pending_stage_transition
+                  - created_at
+  /tasks:
+    get:
+      summary: List tasks for the current family
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    child_id:
+                      type: string
+                      format: uuid
+                    title:
+                      type: string
+                    icon:
+                      type:
+                        - string
+                        - "null"
+                    category:
+                      type: string
+                      enum: &a2
+                        - routine
+                        - chore
+                        - behavior
+                    time_slot:
+                      type: string
+                      enum: &a3
+                        - morning
+                        - afternoon
+                        - evening
+                    difficulty:
+                      type: integer
+                      minimum: 1
+                      maximum: 3
+                    recurrence:
+                      type: string
+                      enum: &a1
+                        - daily
+                        - weekdays
+                        - custom
+                        - one_time
+                    recurrence_days:
+                      type:
+                        - array
+                        - "null"
+                      items:
+                        type: integer
+                    is_bonus:
+                      type: boolean
+                    bonus_cosmetic_id:
+                      type:
+                        - string
+                        - "null"
+                    is_active:
+                      type: boolean
+                    created_at:
+                      type: string
+                      format: date-time
+                  required:
+                    - id
+                    - child_id
+                    - title
+                    - icon
+                    - category
+                    - time_slot
+                    - difficulty
+                    - recurrence
+                    - recurrence_days
+                    - is_bonus
+                    - bonus_cosmetic_id
+                    - is_active
+                    - created_at
+    post:
+      summary: Create a task
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                child_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  minLength: 1
+                category:
+                  type: string
+                  enum:
+                    - routine
+                    - chore
+                    - behavior
+                time_slot:
+                  type: string
+                  enum:
+                    - morning
+                    - afternoon
+                    - evening
+                recurrence:
+                  type: string
+                  enum: *a1
+                icon:
+                  type:
+                    - string
+                    - "null"
+                difficulty:
+                  type: integer
+                  minimum: 1
+                  maximum: 3
+                recurrence_days:
+                  type:
+                    - array
+                    - "null"
+                  items:
+                    type: integer
+                is_bonus:
+                  type: boolean
+                bonus_cosmetic_id:
+                  type:
+                    - string
+                    - "null"
+              required:
+                - child_id
+                - title
+                - category
+                - time_slot
+                - recurrence
+              additionalProperties: false
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  child_id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  icon:
+                    type:
+                      - string
+                      - "null"
+                  category:
+                    type: string
+                    enum: *a2
+                  time_slot:
+                    type: string
+                    enum: *a3
+                  difficulty:
+                    type: integer
+                    minimum: 1
+                    maximum: 3
+                  recurrence:
+                    type: string
+                    enum: *a1
+                  recurrence_days:
+                    type:
+                      - array
+                      - "null"
+                    items:
+                      type: integer
+                  is_bonus:
+                    type: boolean
+                  bonus_cosmetic_id:
+                    type:
+                      - string
+                      - "null"
+                  is_active:
+                    type: boolean
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - child_id
+                  - title
+                  - icon
+                  - category
+                  - time_slot
+                  - difficulty
+                  - recurrence
+                  - recurrence_days
+                  - is_bonus
+                  - bonus_cosmetic_id
+                  - is_active
+                  - created_at
+  /tasks/{id}:
+    patch:
+      summary: Update a task
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: id
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                category:
+                  type: string
+                  enum:
+                    - routine
+                    - chore
+                    - behavior
+                time_slot:
+                  type: string
+                  enum:
+                    - morning
+                    - afternoon
+                    - evening
+                recurrence:
+                  type: string
+                  enum: *a1
+                icon:
+                  type:
+                    - string
+                    - "null"
+                difficulty:
+                  type: integer
+                  minimum: 1
+                  maximum: 3
+                recurrence_days:
+                  type:
+                    - array
+                    - "null"
+                  items:
+                    type: integer
+                is_bonus:
+                  type: boolean
+                bonus_cosmetic_id:
+                  type:
+                    - string
+                    - "null"
+              additionalProperties: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  child_id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  icon:
+                    type:
+                      - string
+                      - "null"
+                  category:
+                    type: string
+                    enum: *a2
+                  time_slot:
+                    type: string
+                    enum: *a3
+                  difficulty:
+                    type: integer
+                    minimum: 1
+                    maximum: 3
+                  recurrence:
+                    type: string
+                    enum: *a1
+                  recurrence_days:
+                    type:
+                      - array
+                      - "null"
+                    items:
+                      type: integer
+                  is_bonus:
+                    type: boolean
+                  bonus_cosmetic_id:
+                    type:
+                      - string
+                      - "null"
+                  is_active:
+                    type: boolean
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - child_id
+                  - title
+                  - icon
+                  - category
+                  - time_slot
+                  - difficulty
+                  - recurrence
+                  - recurrence_days
+                  - is_bonus
+                  - bonus_cosmetic_id
+                  - is_active
+                  - created_at
+    delete:
+      summary: Soft-delete a task (sets is_active=false)
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: id
+          in: path
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  child_id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  icon:
+                    type:
+                      - string
+                      - "null"
+                  category:
+                    type: string
+                    enum: *a2
+                  time_slot:
+                    type: string
+                    enum: *a3
+                  difficulty:
+                    type: integer
+                    minimum: 1
+                    maximum: 3
+                  recurrence:
+                    type: string
+                    enum: *a1
+                  recurrence_days:
+                    type:
+                      - array
+                      - "null"
+                    items:
+                      type: integer
+                  is_bonus:
+                    type: boolean
+                  bonus_cosmetic_id:
+                    type:
+                      - string
+                      - "null"
+                  is_active:
+                    type: boolean
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - child_id
+                  - title
+                  - icon
+                  - category
+                  - time_slot
+                  - difficulty
+                  - recurrence
+                  - recurrence_days
+                  - is_bonus
+                  - bonus_cosmetic_id
+                  - is_active
+                  - created_at
+  /cosmetics:
+    get:
+      summary: List cosmetics catalog
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                        - horn
+                        - mane
+                        - background
+                    asset_path:
+                      type: string
+                  required:
+                    - id
+                    - name
+                    - type
+                    - asset_path
+  /daily-summaries:
+    get:
+      summary: List daily summaries for a child
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    child_id:
+                      type: string
+                      format: uuid
+                    local_date:
+                      type: string
+                      pattern: ^\d{4}-\d{2}-\d{2}$
+                    total_tasks:
+                      type: integer
+                    completed_tasks:
+                      type: integer
+                    was_successful:
+                      type: boolean
+                    simplified_from_miss:
+                      type: boolean
+                  required:
+                    - child_id
+                    - local_date
+                    - total_tasks
+                    - completed_tasks
+                    - was_successful
+                    - simplified_from_miss
+  /insights:
+    get:
+      summary: List AI insights for the family
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    family_id:
+                      type: string
+                      format: uuid
+                    insight_text:
+                      type: string
+                    suggestion_type:
+                      type:
+                        - string
+                        - "null"
+                      enum: &a4
+                        - difficulty_up
+                        - difficulty_down
+                        - reschedule
+                        - break_task
+                        - simplify_tomorrow
+                        - generic
+                    task_id:
+                      type:
+                        - string
+                        - "null"
+                      format: uuid
+                    is_applied:
+                      type: boolean
+                    is_dismissed:
+                      type: boolean
+                    generated_at:
+                      type: string
+                      format: date-time
+                    passed_safety_filter:
+                      type: boolean
+                  required:
+                    - id
+                    - family_id
+                    - insight_text
+                    - suggestion_type
+                    - task_id
+                    - is_applied
+                    - is_dismissed
+                    - generated_at
+                    - passed_safety_filter
+  /insights/{id}/apply:
+    post:
+      summary: Mark insight as applied (idempotent)
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: id
+          in: path
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  family_id:
+                    type: string
+                    format: uuid
+                  insight_text:
+                    type: string
+                  suggestion_type:
+                    type:
+                      - string
+                      - "null"
+                    enum: *a4
+                  task_id:
+                    type:
+                      - string
+                      - "null"
+                    format: uuid
+                  is_applied:
+                    type: boolean
+                  is_dismissed:
+                    type: boolean
+                  generated_at:
+                    type: string
+                    format: date-time
+                  passed_safety_filter:
+                    type: boolean
+                required:
+                  - id
+                  - family_id
+                  - insight_text
+                  - suggestion_type
+                  - task_id
+                  - is_applied
+                  - is_dismissed
+                  - generated_at
+                  - passed_safety_filter
+  /insights/{id}/dismiss:
+    post:
+      summary: Mark insight as dismissed (idempotent)
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: id
+          in: path
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  family_id:
+                    type: string
+                    format: uuid
+                  insight_text:
+                    type: string
+                  suggestion_type:
+                    type:
+                      - string
+                      - "null"
+                    enum: *a4
+                  task_id:
+                    type:
+                      - string
+                      - "null"
+                    format: uuid
+                  is_applied:
+                    type: boolean
+                  is_dismissed:
+                    type: boolean
+                  generated_at:
+                    type: string
+                    format: date-time
+                  passed_safety_filter:
+                    type: boolean
+                required:
+                  - id
+                  - family_id
+                  - insight_text
+                  - suggestion_type
+                  - task_id
+                  - is_applied
+                  - is_dismissed
+                  - generated_at
+                  - passed_safety_filter
   /dev/impersonate:
     post:
       summary: Mint a dev-only access token (non-production only)

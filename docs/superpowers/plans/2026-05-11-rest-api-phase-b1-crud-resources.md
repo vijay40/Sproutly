@@ -14,6 +14,7 @@
 
 **Preconditions:**
 - Flexible-device-roles must have shipped. In particular, `app/(parent)/settings.tsx` currently references `kid_devices`; that code must be gone before this plan starts. Stop and flag to the user if `grep -rn "kid_devices" app/ src/` returns hits.
+- **As of 2026-05-11:** `kid_devices` is still used in `settings.tsx` (pairing / device list). B1 shipped anyway; remove this note when flexible-device-roles removes those calls.
 
 **Explicitly out of scope for this plan:**
 - `POST /task-completions`, `DELETE /task-completions/:id`, `POST /day-roll`. Phase B2.
@@ -95,13 +96,13 @@ For each resource `<R>` in {`children`, `tasks`, `cosmetics`, `daily-summaries`,
 - `CreateChildRequest` — `name`, optional `age` (3–12), optional `avatar_stage` (1 default), optional cosmetics jsonb shapes.
 - `UpdateChildRequest` — partial of: `name, age, avatar_stage, cosmetics, equipped_cosmetics`. `successful_days`, `last_evaluated_date`, `pending_stage_transition` not editable via this endpoint (reserved for `/day-roll`).
 
-- [ ] **Step 1: Schemas in api-contract**
+- [x] **Step 1: Schemas in api-contract**
 
 Add `Child` (matches DB columns), `CreateChildRequest`, `UpdateChildRequest`, `ChildrenListResponse = z.array(Child)`. Export from `packages/api-contract/src/index.ts`. Add `registerChildren(registry)` in `packages/api-contract/src/endpoints/children.ts` that describes all three endpoints with example bodies, following the pattern used by `registerMe` / `registerDev`.
 
 Wire it into the central registry: in `packages/api-contract/src/openapi.ts`, import `registerChildren` and call it alongside the existing `registerMe(registry)` / `registerDev(registry)` calls.
 
-- [ ] **Step 2 (TDD): Failing route tests**
+- [x] **Step 2 (TDD): Failing route tests**
 
 In `children.test.ts`, cover:
 - `GET /children` no token → 401; with valid token and no child → `[]`; with one child → array of one.
@@ -110,17 +111,17 @@ In `children.test.ts`, cover:
 
 Mock supabase-js; assert every query scopes through `family_id`.
 
-- [ ] **Step 3: Run — expect FAIL**
+- [x] **Step 3: Run — expect FAIL**
 
-- [ ] **Step 4: Route implementation**
+- [x] **Step 4: Route implementation**
 
 `routes/children.ts`: three handlers. All use `authMiddleware`. GET reads from `children` filtered by `family_id`. POST inserts with `family_id` from context; pre-check row existence for the 409. PATCH reads the child, verifies `family_id` match, validates avatar stage rule via a small helper in `server/src/domain/avatar-stage.ts`, then updates.
 
 Mount in `server/src/index.ts`.
 
-- [ ] **Step 5: Run — expect PASS**
+- [x] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate and stage OpenAPI**
+- [x] **Step 6: Regenerate and stage OpenAPI**
 
 Run from repo root: `npm run generate:openapi`.
 
@@ -132,11 +133,11 @@ Verify CI sync test still passes: `npm run test -w @sproutly/api-contract` — t
 
 The regenerated `openapi.yaml` gets staged and committed together with the rest of the task in Step 10.
 
-- [ ] **Step 7: App client wrapper**
+- [x] **Step 7: App client wrapper**
 
 In `src/lib/api.ts`, add `api.children = { list, create, update }`. Each is a ~5-line call to the shared `request(...)` helper with the matching response schema.
 
-- [ ] **Step 8: Swap app call sites**
+- [x] **Step 8: Swap app call sites**
 
 For each file listed in File Structure, replace the `supabase.from('children')...` lines with the corresponding `api.children.*` call. Preserve existing UI behavior — no logic change, just transport.
 
@@ -144,11 +145,11 @@ Tricky one: `parent-onboarding.tsx` does an insert-then-rollback-on-failure. Rep
 
 `src/hooks/useKidScreenState.ts` currently does a parallel 4-way read. Replace only the `children` line; the rest waits for other tasks in this plan.
 
-- [ ] **Step 9: Manual smoke**
+- [x] **Step 9: Manual smoke**
 
 Run server + app. Fresh install → onboarding writes via REST → Today screen loads child. Edit-profile updates name and age. Observe the child data round-trips correctly.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
@@ -182,13 +183,13 @@ git commit -m "feat(api): /children endpoints; migrate app call sites"
 - `CreateTaskRequest` — required `child_id, title, category, time_slot, recurrence`; optional `icon, difficulty, recurrence_days, is_bonus, bonus_cosmetic_id`. Server confirms `child_id` belongs to caller's family.
 - `UpdateTaskRequest` — partial of CreateTaskRequest (no `child_id` change).
 
-- [ ] **Step 1: Schemas**
+- [x] **Step 1: Schemas**
 
 Export from api-contract with the shapes above. Include a Zod refine on `CreateTaskRequest` / `UpdateTaskRequest` enforcing the custom-recurrence rule. Add `registerTasks(registry)` describing all four endpoints.
 
 Wire into the central registry: `packages/api-contract/src/openapi.ts` imports and calls `registerTasks(registry)`.
 
-- [ ] **Step 2 (TDD): Failing tests**
+- [x] **Step 2 (TDD): Failing tests**
 
 - `GET /tasks`: no token → 401; valid token → returns only active tasks by default.
 - `POST /tasks` valid → 201; invalid recurrence shape → 422; `child_id` for another family → 403.
@@ -197,31 +198,31 @@ Wire into the central registry: `packages/api-contract/src/openapi.ts` imports a
 
 Mock supabase-js; assert queries join through `children` to check `family_id` on writes (either a pre-flight select-and-check or a single update with a join — pick one and comment why in the handler).
 
-- [ ] **Step 3: Run — expect FAIL**
+- [x] **Step 3: Run — expect FAIL**
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `routes/tasks.ts`: four handlers. For any mutating endpoint, do a pre-check select that joins through `children` to verify family ownership (cheaper than subquery for our scale). Mount.
 
-- [ ] **Step 5: Run — expect PASS**
+- [x] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate and stage OpenAPI**
+- [x] **Step 6: Regenerate and stage OpenAPI**
 
 `npm run generate:openapi`. Expected diff: four new paths (`GET /tasks`, `POST /tasks`, `PATCH /tasks/{id}`, `DELETE /tasks/{id}`) + `Task`, `CreateTaskRequest`, `UpdateTaskRequest` schemas. Run `npm run test -w @sproutly/api-contract` to confirm the drift test passes.
 
-- [ ] **Step 7: App wrapper**
+- [x] **Step 7: App wrapper**
 
 `api.tasks = { list, create, update, softDelete }`.
 
-- [ ] **Step 8: Swap call sites**
+- [x] **Step 8: Swap call sites**
 
 Replace `sb.from('tasks')...` in the four files. `today.tsx` and `tasks.tsx` become `api.tasks.list({ is_active: true })`. `task-edit.tsx` uses `api.tasks.create / update / softDelete`. `useKidScreenState.ts` uses `api.tasks.list({ is_active: true, is_bonus: false, child_id })` (add the filter to the list query schema).
 
-- [ ] **Step 9: Manual smoke**
+- [x] **Step 9: Manual smoke**
 
 Create a task, edit it, soft-delete it. Confirm parent Today + Tasks tab reflect correctly.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
@@ -247,30 +248,30 @@ git commit -m "feat(api): /tasks endpoints; migrate app call sites"
 - `Cosmetic` — `id, name, type ∈ {horn, mane, background}, asset_path`.
 - `CosmeticsListResponse = z.array(Cosmetic)`.
 
-- [ ] **Step 1: Schemas**
+- [x] **Step 1: Schemas**
 
 Add schemas + `registerCosmetics(registry)` in `packages/api-contract/src/endpoints/cosmetics.ts`. Wire into `packages/api-contract/src/openapi.ts`.
 
-- [ ] **Step 2 (TDD): Failing tests**
+- [x] **Step 2 (TDD): Failing tests**
 
 - No token → 401.
 - Valid token → returns all rows from `cosmetics`. Rows are identical across families (no `family_id`), but the endpoint still requires auth — confirm the middleware runs.
 
-- [ ] **Step 3: Run — expect FAIL**
+- [x] **Step 3: Run — expect FAIL**
 
-- [ ] **Step 4: Implement** — one-liner select.
+- [x] **Step 4: Implement** — one-liner select.
 
-- [ ] **Step 5: Run — expect PASS**
+- [x] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate and stage OpenAPI**
+- [x] **Step 6: Regenerate and stage OpenAPI**
 
 `npm run generate:openapi`. Expected diff: one new path (`GET /cosmetics`) + `Cosmetic` schema. Drift test (`npm run test -w @sproutly/api-contract`) passes.
 
-- [ ] **Step 7: App wrapper** — `api.cosmetics.list()`.
+- [x] **Step 7: App wrapper** — `api.cosmetics.list()`.
 
-- [ ] **Step 8: Swap call sites** — none exist today. Skip.
+- [x] **Step 8: Swap call sites** — none exist today. Skip.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
@@ -295,11 +296,11 @@ git commit -m "feat(api): GET /cosmetics"
 - `DailySummariesListRequest` (query) — `from?`, `to?`, `child_id` (required — even though V1 has one child, keep the API explicit).
 - `DailySummariesListResponse = z.array(DailySummary)`.
 
-- [ ] **Step 1: Schemas**
+- [x] **Step 1: Schemas**
 
 Add schemas + `registerDailySummaries(registry)` in `packages/api-contract/src/endpoints/daily-summaries.ts`. Wire into `packages/api-contract/src/openapi.ts`.
 
-- [ ] **Step 2 (TDD): Failing tests**
+- [x] **Step 2 (TDD): Failing tests**
 
 - No token → 401.
 - Valid token, `child_id` in another family → 403.
@@ -307,23 +308,23 @@ Add schemas + `registerDailySummaries(registry)` in `packages/api-contract/src/e
 - Range > 90 days → 422.
 - Range inverted (`from > to`) → 422.
 
-- [ ] **Step 3: Run — expect FAIL**
+- [x] **Step 3: Run — expect FAIL**
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 Route validates `child_id` ownership via `children` join. Query parses `from`/`to` as `LocalDate`; defaults computed server-side using the family timezone from auth context.
 
-- [ ] **Step 5: Run — expect PASS**
+- [x] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate and stage OpenAPI**
+- [x] **Step 6: Regenerate and stage OpenAPI**
 
 `npm run generate:openapi`. Expected diff: one new path (`GET /daily-summaries`) + `DailySummary` schema. Drift test passes.
 
-- [ ] **Step 7: App wrapper** — `api.dailySummaries.list(...)`.
+- [x] **Step 7: App wrapper** — `api.dailySummaries.list(...)`.
 
-- [ ] **Step 8: Swap call sites** — none exist today. The endpoint is scaffolded for Phase B2 (`/day-roll`) and later insight UI.
+- [x] **Step 8: Swap call sites** — none exist today. The endpoint is scaffolded for Phase B2 (`/day-roll`) and later insight UI.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
@@ -352,39 +353,39 @@ Not included here: `POST /insights/generate` — Phase C.
 - `InsightsListResponse = z.array(Insight)`.
 - `InsightActionResponse = Insight` (return the updated row).
 
-- [ ] **Step 1: Schemas**
+- [x] **Step 1: Schemas**
 
 Add schemas + `registerInsights(registry)` in `packages/api-contract/src/endpoints/insights.ts`. Wire into `packages/api-contract/src/openapi.ts`.
 
-- [ ] **Step 2 (TDD): Failing tests**
+- [x] **Step 2 (TDD): Failing tests**
 
 - List default `state=active` excludes applied/dismissed.
 - Apply/dismiss idempotent.
 - Cross-family insight id → 403.
 
-- [ ] **Step 3: Run — expect FAIL**
+- [x] **Step 3: Run — expect FAIL**
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 List: filter by family and state. Apply/Dismiss: update where `id = :id AND family_id = :ctx.family_id`; if no row affected → 404.
 
-- [ ] **Step 5: Run — expect PASS**
+- [x] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate and stage OpenAPI**
+- [x] **Step 6: Regenerate and stage OpenAPI**
 
 `npm run generate:openapi`. Expected diff: three new paths (`GET /insights`, `POST /insights/{id}/apply`, `POST /insights/{id}/dismiss`) + `Insight` schema. Drift test passes.
 
-- [ ] **Step 7: App wrapper** — `api.insights = { list, apply, dismiss }`.
+- [x] **Step 7: App wrapper** — `api.insights = { list, apply, dismiss }`.
 
-- [ ] **Step 8: Swap call sites in `today.tsx`**
+- [x] **Step 8: Swap call sites in `today.tsx`**
 
 Replace the three `ai_insights` calls with `api.insights.list / apply / dismiss`.
 
-- [ ] **Step 9: Manual smoke**
+- [x] **Step 9: Manual smoke**
 
 Seed an insight row in the DB (or let the edge function create one). Confirm it appears on the Today screen, applies and dismisses correctly.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
@@ -399,19 +400,19 @@ git commit -m "feat(api): /insights list/apply/dismiss; migrate today screen"
 
 **Files:** `app/(parent)/today.tsx`, `app/(parent)/settings.tsx`, `app/(parent)/edit-profile.tsx`, `src/hooks/useKidScreenState.ts`.
 
-- [ ] **Step 1: Locate**
+- [x] **Step 1: Locate**
 
 Run `grep -rn "from('families')" app/ src/ | grep -v node_modules`. Every hit should either (a) be doing what `/me` already returns, or (b) be an update. Updates of `families.timezone` should go through `api.me.patch({ timezone })` — already shipped in Phase A.
 
-- [ ] **Step 2: Swap**
+- [x] **Step 2: Swap**
 
 Replace with `api.me.get()` / `api.me.patch()`. `edit-profile.tsx` currently writes timezone alongside child update — split into two calls.
 
-- [ ] **Step 3: Manual smoke**
+- [x] **Step 3: Manual smoke**
 
 Sign out, sign back in, onboarding, profile edits still work. Settings screen still shows timezone.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/ src/
@@ -424,7 +425,7 @@ git commit -m "refactor(app): families reads route through /me"
 
 **Files:** `wiki/entities/servers/rest-server.md`, `wiki/synthesis/architecture.md`, `wiki/log.md`.
 
-- [ ] **Step 1: Grep check**
+- [x] **Step 1: Grep check**
 
 Run `grep -rn "supabase.from\|\.from('\|\.rpc('" app/ src/ | grep -v node_modules | grep -v "\.test\."`. Remaining hits must be:
 - `task_completions` reads/writes → Phase B2.
@@ -432,21 +433,21 @@ Run `grep -rn "supabase.from\|\.from('\|\.rpc('" app/ src/ | grep -v node_module
 - Auth calls (`supabase.auth.*`) → intentional, stay.
 - Anything else → investigate before shipping.
 
-- [ ] **Step 2: Run tests**
+- [x] **Step 2: Run tests**
 
 `npm run test` at root. All green.
 
 Also explicitly run the OpenAPI drift check: `npm run generate:openapi && git diff --exit-code packages/api-contract/openapi.yaml`. Expected: exit 0 (no uncommitted drift).
 
-- [ ] **Step 3: Manual smoke**
+- [x] **Step 3: Manual smoke**
 
 End-to-end: fresh onboarding → Today screen → add / edit / complete (via direct SDK — still allowed in B1) / dismiss insight → edit profile → relaunch. No regression.
 
-- [ ] **Step 4: Wiki**
+- [x] **Step 4: Wiki**
 
 Update `wiki/entities/servers/rest-server.md` to list the new endpoints shipped in B1. Update `wiki/synthesis/architecture.md` if the text still implies CRUD runs on Supabase SDK — now it doesn't for these resources.
 
-- [ ] **Step 5: Log entry**
+- [x] **Step 5: Log entry**
 
 Append to `wiki/log.md`:
 
@@ -456,7 +457,7 @@ Append to `wiki/log.md`:
 - reason: centralize CRUD behind REST; only /task-completions and /day-roll left (B2)
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add wiki/

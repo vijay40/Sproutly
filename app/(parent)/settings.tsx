@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { api } from '../../src/lib/api';
 import { getParentClient } from '../../src/lib/supabase';
 import { clearMode } from '../../src/lib/mode';
 import { relativeTime } from '../../src/lib/relativeTime';
@@ -35,16 +36,16 @@ export default function Settings() {
 
   const load = useCallback(async () => {
     const sb = getParentClient();
-    const [{ data: ch }, { data: devs }, { data: fam }, { data: session }] = await Promise.all([
-      sb.from('children').select('*').single(),
+    const [{ data: devs }, { data: session }, me, children] = await Promise.all([
       sb.from('kid_devices').select('id, device_label, paired_at, device_token_hash').not('device_token_hash', 'is', null),
-      sb.from('families').select('timezone').single(),
       sb.auth.getSession(),
+      api.me.get(),
+      api.children.list(),
     ]);
-    setChild((ch as ChildRow | null) ?? null);
+    setChild((children[0] as ChildRow | undefined) ?? null);
     setDevices(((devs ?? []) as DeviceRow[]));
     setEmail(session.session?.user?.email ?? '');
-    setTimezone(((fam as { timezone: string } | null)?.timezone) ?? '');
+    setTimezone(me.timezone ?? '');
   }, []);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));

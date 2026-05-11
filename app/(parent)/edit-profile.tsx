@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, Text as RNText, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getParentClient } from '../../src/lib/supabase';
+import { api } from '../../src/lib/api';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
 import { friendlyLabel, gmtOffset, guessDeviceZone } from '../../src/lib/timezones';
 import type { ChildRow } from '../../src/types/db';
@@ -47,13 +47,9 @@ export default function EditProfile() {
 
   useEffect(() => {
     void (async () => {
-      const sb = getParentClient();
-      const [{ data: ch }, { data: fam }] = await Promise.all([
-        sb.from('children').select('*').single(),
-        sb.from('families').select('timezone').single(),
-      ]);
-      const row = (ch as ChildRow | null) ?? null;
-      const tz = ((fam as { timezone: string } | null)?.timezone) ?? '';
+      const [me, children] = await Promise.all([api.me.get(), api.children.list()]);
+      const row = (children[0] as ChildRow | undefined) ?? null;
+      const tz = me.timezone ?? '';
       if (row) {
         setChild(row);
         setName(row.name);
@@ -86,17 +82,16 @@ export default function EditProfile() {
   async function onSave() {
     if (!child || !isValid || saving) return;
     setSaving(true);
-    const sb = getParentClient();
-    const [{ error: cErr }, { error: fErr }] = await Promise.all([
-      sb
-        .from('children')
-        .update({ name: nameTrimmed, age, avatar_emoji: avatarEmoji })
-        .eq('id', child.id),
-      sb.from('families').update({ timezone }).eq('id', child.family_id),
-    ]);
+    try {
+      await Promise.all([
+        api.children.update(child.id, { name: nameTrimmed, age, avatar_emoji: avatarEmoji }),
+        api.me.patch({ timezone }),
+      ]);
+    } catch (e) {
+      setSaving(false);
+      return Alert.alert('Save failed', e instanceof Error ? e.message : 'Unknown error');
+    }
     setSaving(false);
-    const err = cErr ?? fErr;
-    if (err) return Alert.alert('Save failed', err.message);
     tapSuccess();
     router.back();
   }

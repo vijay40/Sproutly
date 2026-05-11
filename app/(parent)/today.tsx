@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { api } from '../../src/lib/api';
 import { getParentClient } from '../../src/lib/supabase';
 import { todayLocalDate } from '../../src/lib/time';
 import { isTaskScheduledOn } from '../../src/domain/tasks';
@@ -57,17 +58,27 @@ export default function Today() {
 
   const load = useCallback(async () => {
     const sb = getParentClient();
-    const [{ data: fam }, { data: ch }, { data: ts }] = await Promise.all([
-      sb.from('families').select('*').single(),
-      sb.from('children').select('*').single(),
-      sb.from('tasks').select('*').eq('is_active', true),
+    const [me, children, taskList, insList] = await Promise.all([
+      api.me.get(),
+      api.children.list(),
+      api.tasks.list({ is_active: 'true' }),
+      api.insights.list({ state: 'active' }),
     ]);
-    setFamily((fam as FamilyRow | null) ?? null);
-    setChild((ch as ChildRow | null) ?? null);
-    setTasks(((ts ?? []) as TaskRowType[]));
+    const fam =
+      me.family_id && me.timezone
+        ? ({
+            id: me.family_id,
+            timezone: me.timezone,
+            parent_user_id: null,
+            created_at: '',
+          } as FamilyRow)
+        : null;
+    setFamily(fam);
+    setChild((children[0] as ChildRow | undefined) ?? null);
+    setTasks(taskList as TaskRowType[]);
 
     if (fam) {
-      const today = todayLocalDate((fam as FamilyRow).timezone);
+      const today = todayLocalDate(fam.timezone);
       const { data: comps } = await sb
         .from('task_completions')
         .select('task_id')
@@ -75,14 +86,7 @@ export default function Today() {
       setCompletedIds(new Set(((comps ?? []) as Pick<TaskCompletionRow, 'task_id'>[]).map((c) => c.task_id)));
     }
 
-    const { data: ins } = await sb
-      .from('ai_insights')
-      .select('id, insight_text, is_applied, is_dismissed')
-      .eq('is_applied', false)
-      .eq('is_dismissed', false)
-      .order('generated_at', { ascending: false })
-      .limit(1);
-    setInsight(((ins ?? [])[0] as AiInsightRow | undefined) ?? null);
+    setInsight((insList[0] as AiInsightRow | undefined) ?? null);
   }, []);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -123,13 +127,21 @@ export default function Today() {
   async function applyInsight() {
     if (!insight) return;
     tapLight();
-    await getParentClient().from('ai_insights').update({ is_applied: true }).eq('id', insight.id);
-    setInsight(null);
+    try {
+      await api.insights.apply(insight.id);
+      setInsight(null);
+    } catch {
+      Alert.alert('Could not apply insight');
+    }
   }
   async function dismissInsight() {
     if (!insight) return;
-    await getParentClient().from('ai_insights').update({ is_dismissed: true }).eq('id', insight.id);
-    setInsight(null);
+    try {
+      await api.insights.dismiss(insight.id);
+      setInsight(null);
+    } catch {
+      Alert.alert('Could not dismiss insight');
+    }
   }
 
   if (!family || !child) {

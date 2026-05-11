@@ -1,11 +1,33 @@
 import {
   ApiError,
   ApiErrorBodySchema,
+  Child,
+  ChildrenListResponse,
+  CosmeticsListResponse,
+  CreateChildRequest,
+  CreateTaskRequest,
+  DailySummariesListResponse,
   GetMeResponse,
+  Insight,
+  InsightsListResponse,
   PatchMeRequest,
   type PatchMeRequest as PatchMeBody,
+  Task,
+  TasksListResponse,
+  UpdateChildRequest,
+  UpdateTaskRequest,
 } from '@sproutly/api-contract';
+import type { z } from 'zod';
 import { getParentClient } from './supabase';
+
+function withQuery(path: string, query: Record<string, string | undefined>): string {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(query)) {
+    if (v !== undefined && v !== '') sp.set(k, v);
+  }
+  const s = sp.toString();
+  return s ? `${path}?${s}` : path;
+}
 
 function apiBaseUrl(): string | undefined {
   return process.env.EXPO_PUBLIC_API_URL;
@@ -101,6 +123,76 @@ export const api = {
       requestJson('PATCH', '/me', {
         body: PatchMeRequest.parse(body),
         responseSchema: GetMeResponse,
+        auth: true,
+      }),
+  },
+  children: {
+    list: () => requestJson('GET', '/children', { responseSchema: ChildrenListResponse, auth: true }),
+    create: (body: z.infer<typeof CreateChildRequest>) =>
+      requestJson('POST', '/children', {
+        body: CreateChildRequest.parse(body),
+        responseSchema: Child,
+        auth: true,
+      }),
+    update: (id: string, body: z.infer<typeof UpdateChildRequest>) =>
+      requestJson('PATCH', `/children/${encodeURIComponent(id)}`, {
+        body: UpdateChildRequest.parse(body),
+        responseSchema: Child,
+        auth: true,
+      }),
+  },
+  tasks: {
+    list: (params?: {
+      is_active?: 'true' | 'false' | 'all';
+      is_bonus?: 'true' | 'false';
+      child_id?: string;
+    }) =>
+      requestJson('GET', withQuery('/tasks', params ?? {}), {
+        responseSchema: TasksListResponse,
+        auth: true,
+      }),
+    create: (body: z.infer<typeof CreateTaskRequest>) =>
+      requestJson('POST', '/tasks', {
+        body: CreateTaskRequest.parse(body),
+        responseSchema: Task,
+        auth: true,
+      }),
+    update: (id: string, body: z.infer<typeof UpdateTaskRequest>) =>
+      requestJson('PATCH', `/tasks/${encodeURIComponent(id)}`, {
+        body: UpdateTaskRequest.parse(body),
+        responseSchema: Task,
+        auth: true,
+      }),
+    softDelete: (id: string) =>
+      requestJson('DELETE', `/tasks/${encodeURIComponent(id)}`, {
+        responseSchema: Task,
+        auth: true,
+      }),
+  },
+  cosmetics: {
+    list: () => requestJson('GET', '/cosmetics', { responseSchema: CosmeticsListResponse, auth: true }),
+  },
+  dailySummaries: {
+    list: (params: { child_id: string; from?: string; to?: string }) =>
+      requestJson('GET', withQuery('/daily-summaries', params), {
+        responseSchema: DailySummariesListResponse,
+        auth: true,
+      }),
+  },
+  insights: {
+    list: (params?: { state?: 'active' | 'applied' | 'dismissed' | 'all' }) =>
+      requestJson('GET', withQuery('/insights', params ?? {}), {
+        responseSchema: InsightsListResponse,
+        auth: true,
+      }),
+    apply: (id: string) =>
+      requestJson('POST', `/insights/${encodeURIComponent(id)}/apply`, {
+        responseSchema: Insight,
+        auth: true,
+      }),
+    dismiss: (id: string) =>
+      requestJson('POST', `/insights/${encodeURIComponent(id)}/dismiss`, {
+        responseSchema: Insight,
         auth: true,
       }),
   },
