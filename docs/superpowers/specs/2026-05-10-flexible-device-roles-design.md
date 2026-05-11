@@ -79,7 +79,7 @@ Two invariants in `wiki/synthesis/v1-scope.md` change:
 | `src/lib/secureStore.ts` | Kid-token helpers (`getKidToken`/`setKidToken`/`clearKidToken`) deleted. PIN helpers added. |
 | `src/lib/server.ts` | **Deleted** (pairing endpoint client). |
 | `src/domain/markTaskComplete.ts` | **New.** Shared helper used by both parent and kid-view task taps. Idempotent by `(task_id, local_date, child_id)`. |
-| Kid scenes | Add `small` (<600) breakpoint: single column, reduced avatar (~180px), stacked layout. Confetti/progress/streak/task row already take width props; smaller defaults at small breakpoint. |
+| Kid scenes | Add `small` (<600) breakpoint: single column, reduced avatar (~180px), stacked layout. Confetti/progress/streak/task row already take width props; smaller defaults at small breakpoint. No new Figma frames — existing iPad K-frames are the reference; implementation adapts them to phone widths. |
 | `src/hooks/useKidScreenState.ts` | Remove any input that assumed kid-token; subscribe to realtime via parent client. |
 
 ### PIN pad UX
