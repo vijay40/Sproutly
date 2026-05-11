@@ -19,10 +19,10 @@ export interface KidStateInput {
 }
 
 export type KidState =
-  | { kind: 'greeting';    slot: GreetingSlot; child: ChildRow }
+  | { kind: 'greeting';    child: ChildRow }
   | { kind: 'today';       tasks: TaskRow[]; completions: TaskCompletionRow[]; child: ChildRow; family: FamilyRow; offline: boolean }
   | { kind: 'celebration'; underlying: KidState; lastEvent: NonNullable<KidStateInput['lastEvent']> }
-  | { kind: 'all-done';    child: ChildRow; variant: 'takeover' | 'resting'; offline: boolean }
+  | { kind: 'takeover';    child: ChildRow; tasks: TaskRow[]; completions: TaskCompletionRow[]; offline: boolean }
   | { kind: 'evolution';   from: number; to: number; child: ChildRow }
   | { kind: 'simplified';  tasks: TaskRow[]; completions: TaskCompletionRow[]; child: ChildRow; family: FamilyRow; offline: boolean };
 
@@ -59,13 +59,15 @@ export function deriveKidState(input: KidStateInput): KidState {
       family: input.family,
       offline,
     };
-  } else if (allComplete(input)) {
-    const nextSuccessfulDays = input.child.successful_days + 1;
-    const takeover = STAGE_THRESHOLDS.has(nextSuccessfulDays);
+  } else if (allComplete(input) && STAGE_THRESHOLDS.has(input.child.successful_days + 1)) {
+    // Stage-up threshold crossed → full-screen takeover. Otherwise the resting
+    // "all done" state is just TodayScene with a different header, so we route
+    // it through the `today` kind below.
     underlying = {
-      kind: 'all-done',
+      kind: 'takeover',
       child: input.child,
-      variant: takeover ? 'takeover' : 'resting',
+      tasks: input.tasks,
+      completions: input.completions,
       offline,
     };
   } else {
@@ -86,7 +88,7 @@ export function deriveKidState(input: KidStateInput): KidState {
 
   // Precedence 3: greeting (one-shot; cleared by hook after shown)
   if (input.greetingSlot) {
-    return { kind: 'greeting', slot: input.greetingSlot, child: input.child };
+    return { kind: 'greeting', child: input.child };
   }
 
   return underlying;

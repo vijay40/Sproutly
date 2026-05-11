@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AppMode, getMode } from '../src/lib/mode';
+import { api } from '../src/lib/api';
 import { consumeAuthSessionFromUrl, getParentClient } from '../src/lib/supabase';
 import { useAppFonts } from '../src/fonts';
 
@@ -46,13 +47,19 @@ export default function RootLayout() {
       if (stored === null && inGroup !== '(first-launch)' && inGroup !== '(kid)') {
         router.replace('/(first-launch)');
       } else if (stored === 'parent') {
-        const { data: family } = await getParentClient().from('families').select('id').limit(1);
+        let familyId: string | null = null;
+        try {
+          const me = await api.me.get();
+          familyId = me.family_id;
+        } catch {
+          familyId = null;
+        }
         if (cancelled) return;
-        if (!family?.length) {
+        if (!familyId) {
           router.replace('/(first-launch)/parent-onboarding');
           return;
         }
-        if (inGroup !== '(parent)') {
+        if (inGroup !== '(parent)' && inGroup !== '(kid)') {
           router.replace('/(parent)/today');
         }
       } else if (stored === 'kid' && inGroup !== '(kid)') {

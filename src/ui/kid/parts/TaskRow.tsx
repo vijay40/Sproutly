@@ -4,7 +4,15 @@ import { slotIconBg, kidInk, kidMuted } from '../theme';
 
 const slotLabel: Record<string, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
 
-export function TaskRow({ task, completion }: { task: TaskRowType; completion: TaskCompletionRow | null }) {
+export function TaskRow({
+  task,
+  completion,
+  width = 600,
+}: {
+  task: TaskRowType;
+  completion: TaskCompletionRow | null;
+  width?: number;
+}) {
   const complete = !!completion;
   const bg = slotIconBg[task.time_slot];
 
@@ -12,9 +20,9 @@ export function TaskRow({ task, completion }: { task: TaskRowType; completion: T
     <View
       style={{
         backgroundColor: '#FFFFFF',
-        height: 108,
-        borderRadius: 24,
-        width: 600,
+        height: 81,
+        borderRadius: 18,
+        width,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.06,
@@ -26,25 +34,25 @@ export function TaskRow({ task, completion }: { task: TaskRowType; completion: T
       <View
         style={{
           position: 'absolute',
-          left: 18,
-          top: 18,
-          width: 72,
-          height: 72,
-          borderRadius: 18,
+          left: 14,
+          top: 14,
+          width: 54,
+          height: 54,
+          borderRadius: 14,
           backgroundColor: bg,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 40, lineHeight: 48, textAlign: 'center' }}>{task.icon ?? '•'}</Text>
+        <Text style={{ fontSize: 30, lineHeight: 36, textAlign: 'center' }}>{task.icon ?? '•'}</Text>
       </View>
 
       <Text
         style={{
           position: 'absolute',
-          left: 108,
-          top: 26,
-          fontSize: 22,
+          left: 81,
+          top: 20,
+          fontSize: 17,
           fontFamily: 'LexendDeca-SemiBold',
           color: complete ? kidMuted : kidInk,
           textDecorationLine: complete ? 'line-through' : 'none',
@@ -55,9 +63,9 @@ export function TaskRow({ task, completion }: { task: TaskRowType; completion: T
       <Text
         style={{
           position: 'absolute',
-          left: 108,
-          top: 58,
-          fontSize: 14,
+          left: 81,
+          top: 44,
+          fontSize: 11,
           fontFamily: 'LexendDeca-Regular',
           color: kidMuted,
         }}
@@ -69,29 +77,29 @@ export function TaskRow({ task, completion }: { task: TaskRowType; completion: T
         <View
           style={{
             position: 'absolute',
-            left: 520,
-            top: 26,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            right: 20,
+            top: 20,
+            width: 42,
+            height: 42,
+            borderRadius: 21,
             backgroundColor: '#D4F4E5',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontSize: 28, color: '#2E9F6B', fontFamily: 'LexendDeca-Bold' }}>✓</Text>
+          <Text style={{ fontSize: 21, color: '#2E9F6B', fontFamily: 'LexendDeca-Bold' }}>✓</Text>
         </View>
       ) : (
         <View
           style={{
             position: 'absolute',
-            left: 520,
-            top: 26,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            right: 20,
+            top: 20,
+            width: 42,
+            height: 42,
+            borderRadius: 21,
             backgroundColor: '#EDE8FF',
-            borderWidth: 3,
+            borderWidth: 2,
             borderColor: '#EEE9FF',
           }}
         />

@@ -1,0 +1,30 @@
+{
+  "name": "@sproutly/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "@sproutly/api-contract": "*",
+    "@supabase/supabase-js": "^2.105.1",
+    "dotenv": "^16.6.1",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "hono": "^4.11.7",
+    "jsonwebtoken": "^9.0.2",
+    "yaml": "^2.8.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^25.6.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.5"
+  }
+}

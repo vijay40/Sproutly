@@ -1,42 +1,70 @@
-import { View, Text } from 'react-native';
+import { View, Text, useWindowDimensions } from 'react-native';
 import type { ChildRow } from '../../../types/db';
-import type { GreetingSlot } from '../../../domain/kidScreenState';
-import { BackgroundBlobs } from '../parts/BackgroundBlobs';
-import { AvatarOrb } from '../parts/AvatarOrb';
-import { FRAME_H, FRAME_W, kidInk, slotGradients } from '../theme';
+import { KidBackgroundPurple } from '../parts/KidBackground';
+import { AvatarCircle } from '../parts/AvatarCircle';
+import { kidInk, kidMuted, stageEmoji } from '../theme';
 
-const HEADER: Record<GreetingSlot, string> = {
-  morning:   'Good morning',
-  afternoon: 'Welcome back',
-  evening:   'Good evening',
-};
+export function GreetingScene({ child }: { child: ChildRow }) {
+  const { width, height } = useWindowDimensions();
+  const landscape = width > height;
+  const small = width < 600;
 
-export function GreetingScene({ slot, child }: { slot: GreetingSlot; child: ChildRow }) {
-  const g = slotGradients[slot];
+  const orbSize = small ? 200 : landscape ? 300 : 350;
+  const titleSize = small ? 32 : landscape ? 46 : 36;
+  const titleLine = small ? 40 : landscape ? 50 : 40;
+  const subSize = small ? 16 : 24;
+  const subLine = small ? 22 : 32;
+  const subTopGap = small ? 8 : 16;
+  const titleTopGap = small ? 24 : 40;
+
   return (
     <View
       style={{
-        width: FRAME_W,
-        height: FRAME_H,
-        backgroundColor: g.from,
-        borderRadius: 40,
+        flex: 1,
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
       }}
     >
-      <BackgroundBlobs />
-      <AvatarOrb emoji={child.avatar_emoji ?? '🦄'} />
+      <KidBackgroundPurple />
+      <AvatarCircle emoji={stageEmoji(child.avatar_stage)} size={orbSize} />
       <Text
         style={{
-          fontSize: 48,
+          fontSize: titleSize,
+          lineHeight: titleLine,
           fontFamily: 'LexendDeca-Bold',
           color: kidInk,
-          marginTop: 32,
+          marginTop: titleTopGap,
+          textAlign: 'center',
         }}
       >
-        {HEADER[slot]}, {child.name}
+        {small ? 'Welcome back,' : `Welcome back, ${child.name}`}
+      </Text>
+      {small ? (
+        <Text
+          style={{
+            fontSize: 28,
+            lineHeight: 36,
+            fontFamily: 'LexendDeca-Bold',
+            color: kidInk,
+            textAlign: 'center',
+          }}
+        >
+          {child.name}
+        </Text>
+      ) : null}
+      <Text
+        style={{
+          fontSize: subSize,
+          lineHeight: subLine,
+          fontFamily: 'LexendDeca-Medium',
+          color: kidMuted,
+          marginTop: subTopGap,
+          textAlign: 'center',
+        }}
+      >
+        Let&rsquo;s have a great day!
       </Text>
     </View>
   );

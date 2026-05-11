@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: Sproutly REST API
+  version: 0.0.0
+  description: Phase A scaffold. See docs/superpowers/specs/2026-05-11-rest-api-design.md
+servers:
+  - url: http://localhost:8787
+    description: Local dev default. In Insomnia, change Base URL for LAN IP or staging. (Insomnia requires a literal URL or
+      OpenAPI server variables with defaults, not brace-only placeholders.)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas: {}
+  parameters: {}
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    enum:
+                      - true
+                  version:
+                    type: string
+                required:
+                  - ok
+                  - version
+  /me:
+    get:
+      summary: Current parent profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  family_id:
+                    type:
+                      - string
+                      - "null"
+                    format: uuid
+                  timezone:
+                    type:
+                      - string
+                      - "null"
+                  has_onboarded:
+                    type: boolean
+                required:
+                  - user_id
+                  - family_id
+                  - timezone
+                  - has_onboarded
+    patch:
+      summary: Update current parent profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timezone:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  family_id:
+                    type:
+                      - string
+                      - "null"
+                    format: uuid
+                  timezone:
+                    type:
+                      - string
+                      - "null"
+                  has_onboarded:
+                    type: boolean
+                required:
+                  - user_id
+                  - family_id
+                  - timezone
+                  - has_onboarded
+  /dev/impersonate:
+    post:
+      summary: Mint a dev-only access token (non-production only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                required:
+                  - access_token
+                  - expires_at
+  /openapi.yaml:
+    get:
+      summary: OpenAPI document (dev only on server)
+      responses:
+        "200":
+          description: YAML document
+          content:
+            text/yaml:
+              schema:
+                type: string
+webhooks: {}

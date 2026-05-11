@@ -23,5 +23,6 @@ export * from './PickerSheet';
 export * from './EmojiPickerSheet';
 export * from './TimezonePickerSheet';
 export * from './DropdownField';
+export * from './PinPad';
 export * from './PairCodeSheet';
 export * as Icons from './icons';

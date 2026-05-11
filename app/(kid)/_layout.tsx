@@ -12,11 +12,11 @@ export default function KidLayout() {
       const token = await getKidToken();
       if (cancelled) return;
       const leaf = segments[segments.length - 1];
-      if (!token && leaf !== 'pair') {
-        router.replace('/(kid)/pair');
-      } else if (token && leaf === 'pair') {
-        router.replace('/(kid)/display');
-      }
+      // if (!token && leaf !== 'pair') {
+      //   router.replace('/(kid)/pair');
+      // } else if (token && leaf === 'pair') {
+        // router.replace('/(kid)/display');
+      // }
     })();
     return () => { cancelled = true; };
   }, [segments, router]);

@@ -94,7 +94,7 @@ export function useKidScreenState(): { state: KidState | null; ready: boolean; o
 
         const today = todayLocalDate(family.timezone);
         const now = new Date();
-        const todayTasks = ((t ?? []) as TaskRow[]).filter((x) => isTaskScheduledOn(x, now, family.timezone)).slice(0, 3);
+        const todayTasks = ((t ?? []) as TaskRow[]).filter((x) => isTaskScheduledOn(x, now, family.timezone));
         const todayCompletions = ((cmp ?? []) as TaskCompletionRow[]).filter((x) => x.local_date === today);
 
         // Evolution one-shot

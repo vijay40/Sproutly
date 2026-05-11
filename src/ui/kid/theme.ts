@@ -39,3 +39,19 @@ export const kidWhite = '#FFFFFF';
 /** iPad frame dimensions (Figma). */
 export const FRAME_W = 1194;
 export const FRAME_H = 834;
+
+/**
+ * Avatar stage → emoji / display name. Keyed by `children.avatar_stage` (0-5).
+ * The child's avatar is always derived from their current stage — never from
+ * a free-form `avatar_emoji` field.
+ */
+export const STAGE_EMOJI = ['🥚', '🐣', '🐴', '✨', '🦄', '🌟'] as const;
+export const STAGE_NAMES = ['Egg', 'Hatchling', 'Foal', 'Sparky', 'Unicorn', 'Starborn'] as const;
+
+export function stageEmoji(stage: number): string {
+  return STAGE_EMOJI[stage] ?? STAGE_EMOJI[STAGE_EMOJI.length - 1];
+}
+
+export function stageName(stage: number): string {
+  return STAGE_NAMES[stage] ?? STAGE_NAMES[STAGE_NAMES.length - 1];
+}

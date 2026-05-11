@@ -1,9 +1,9 @@
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { BackgroundBlobs } from '../parts/BackgroundBlobs';
-import { AvatarOrb } from '../parts/AvatarOrb';
+import { KidBackgroundPurple } from '../parts/KidBackground';
+import { AvatarCircle } from '../parts/AvatarCircle';
 import { CodeEntry } from '../../CodeEntry';
 import { PrimaryButton } from '../../Button';
-import { kidInk, kidMuted, kidPurple, kidPurpleWash, slotGradients } from '../theme';
+import { kidInk, kidMuted, kidPurple, kidPurpleWash } from '../theme';
 
 export function PrePairScene({
   code,
@@ -24,12 +24,11 @@ export function PrePairScene({
     <View
       style={{
         flex: 1,
-        backgroundColor: slotGradients.default.from,
         overflow: 'hidden',
         position: 'relative',
       }}
     >
-      <BackgroundBlobs />
+      <KidBackgroundPurple />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -80,7 +79,7 @@ export function PrePairScene({
           </View>
 
           <View style={{ alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 24 }}>
-            <AvatarOrb emoji="🥚" />
+            <AvatarCircle emoji="🥚" size={420} />
             <View
               style={{
                 backgroundColor: kidPurpleWash,

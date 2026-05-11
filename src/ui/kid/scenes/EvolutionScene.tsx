@@ -1,20 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, View, useWindowDimensions } from 'react-native';
 import LottieView from 'lottie-react-native';
-import type { ChildRow } from '../../../types/db';
-import { BackgroundBlobs } from '../parts/BackgroundBlobs';
-import { FRAME_H, FRAME_W, kidWhite, orb, slotGradients } from '../theme';
-
-const STAGE_EMOJI = ['🥚', '🐣', '🐴', '✨', '🦄', '🌟'];
+import { KidBackgroundNight } from '../parts/KidBackground';
+import { AvatarCircle } from '../parts/AvatarCircle';
+import { stageEmoji } from '../theme';
 
 export function EvolutionScene({
-  from, to, child, onComplete,
+  from, to, onComplete,
 }: {
   from: number;
   to: number;
-  child: ChildRow;
   onComplete: () => void;
 }) {
+  const { width, height } = useWindowDimensions();
+  const landscape = width > height;
   const lottieRef = useRef<LottieView>(null);
   const fade = useRef(new Animated.Value(0)).current;
   const [showTo, setShowTo] = useState(false);
@@ -29,49 +28,43 @@ export function EvolutionScene({
     return () => { clearTimeout(crossfadeAt); clearTimeout(finish); };
   }, [fade, onComplete]);
 
-  const fromEmoji = STAGE_EMOJI[from] ?? '🦄';
-  const toEmoji = child.avatar_emoji ?? STAGE_EMOJI[to] ?? '🦄';
+  const fromEmoji = stageEmoji(from);
+  const toEmoji = stageEmoji(to);
+
+  const orbSize = landscape ? 300 : 360;
+  const emojiSize = Math.round(orbSize * 0.611);
 
   return (
     <View
       style={{
-        width: FRAME_W,
-        height: FRAME_H,
-        backgroundColor: slotGradients.default.to,
-        borderRadius: 40,
+        flex: 1,
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
       }}
     >
-      <BackgroundBlobs />
-      <View
-        style={{
-          width: orb.size,
-          height: orb.size,
-          borderRadius: orb.size / 2,
-          backgroundColor: kidWhite,
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
-        {!showTo && (
-          <Text style={{ fontSize: 220, textAlign: 'center' }}>{fromEmoji}</Text>
-        )}
-        {showTo && (
-          <Animated.Text style={{ fontSize: 220, textAlign: 'center', opacity: fade }}>
-            {toEmoji}
-          </Animated.Text>
-        )}
-      </View>
+      <KidBackgroundNight />
+      <AvatarCircle size={orbSize} shadow="hero">
+        <View style={{ width: orbSize, height: orbSize, alignItems: 'center', justifyContent: 'center' }}>
+          {!showTo && (
+            <Animated.Text style={{ fontSize: emojiSize, lineHeight: Math.round(emojiSize * 1.18), textAlign: 'center' }}>
+              {fromEmoji}
+            </Animated.Text>
+          )}
+          {showTo && (
+            <Animated.Text style={{ fontSize: emojiSize, lineHeight: Math.round(emojiSize * 1.18), textAlign: 'center', opacity: fade }}>
+              {toEmoji}
+            </Animated.Text>
+          )}
+        </View>
+      </AvatarCircle>
       <LottieView
         ref={lottieRef}
         source={require('../../../../assets/lottie/evolution.json')}
         autoPlay
         loop={false}
-        style={{ position: 'absolute', width: 800, height: 800 }}
+        style={{ position: 'absolute', width: Math.min(width, height), height: Math.min(width, height) }}
       />
     </View>
   );

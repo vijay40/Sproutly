@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { FRAME_H, FRAME_W } from '../theme';
 
+/**
+ * Confetti overlay shown for ~2s when a task is marked complete.
+ * Renders over whatever scene is passed as children, filling the full window.
+ */
 export function CelebrationScene({
   children,
   onComplete,
@@ -12,6 +15,7 @@ export function CelebrationScene({
   onComplete?: () => void;
 }) {
   const ref = useRef<LottieView>(null);
+  const { width, height } = useWindowDimensions();
 
   useEffect(() => {
     ref.current?.play();
@@ -20,27 +24,16 @@ export function CelebrationScene({
   }, [onComplete]);
 
   return (
-    <View style={{ width: FRAME_W, height: FRAME_H }}>
+    <View style={{ flex: 1 }}>
       {children}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: FRAME_W,
-          height: FRAME_H,
-          backgroundColor: 'rgba(0,0,0,0.05)',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { alignItems: 'center', justifyContent: 'center' }]}>
         <LottieView
           ref={ref}
-          source={require('../../../../assets/lottie/celebration.json')}
+          source={require('../../../../assets/lottie/confetti.lottie')}
           autoPlay
           loop={false}
-          style={{ width: 600, height: 600 }}
+          style={{ width, height }}
+          resizeMode="cover"
         />
       </View>
     </View>

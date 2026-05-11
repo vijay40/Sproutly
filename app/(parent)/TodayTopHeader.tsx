@@ -1,12 +1,16 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, Text as RNText, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { colors, spacing } from '../../src/theme/tokens';
 import { BodyEmphasis, Caption, IconTile, Text } from '../../src/ui';
+import { tapLight } from '../../src/lib/haptics';
 
 interface Props {
   greeting: string;
 }
 
 export function TodayTopHeader({ greeting }: Props) {
+  const router = useRouter();
+
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.m }}>
@@ -27,11 +31,45 @@ export function TodayTopHeader({ greeting }: Props) {
           <BodyEmphasis>{greeting}</BodyEmphasis>
         </View>
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Notifications" hitSlop={10}>
-        <IconTile tint="purpleWash" size={40} radius={20}>
-          <Text style={{ fontSize: 14, lineHeight: 18 }}>🔔</Text>
-        </IconTile>
-      </Pressable>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Pressable
+          onPress={() => {
+            tapLight();
+            router.push('/(kid)/display');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Kid view"
+          hitSlop={8}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: 40,
+            paddingHorizontal: 14,
+            borderRadius: 20,
+            backgroundColor: pressed ? '#E9DFFF' : '#F3EEFF',
+            borderWidth: 1,
+            borderColor: '#E4DAFF',
+            gap: 6,
+          })}
+        >
+          <RNText style={{ fontSize: 16 }}>👁</RNText>
+          <Text
+            style={{
+              fontFamily: 'LexendDeca-SemiBold',
+              fontSize: 13,
+              lineHeight: 16,
+              color: colors.purple,
+            }}
+          >
+            Kid view
+          </Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Notifications" hitSlop={10}>
+          <IconTile tint="purpleWash" size={40} radius={20}>
+            <Text style={{ fontSize: 14, lineHeight: 18 }}>🔔</Text>
+          </IconTile>
+        </Pressable>
+      </View>
     </View>
   );
 }

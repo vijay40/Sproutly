@@ -58,24 +58,22 @@ describe('deriveKidState', () => {
   it('greeting wins over today when no celebration', () => {
     const s = deriveKidState({ ...base, greetingSlot: 'afternoon' });
     expect(s.kind).toBe('greeting');
-    if (s.kind === 'greeting') expect(s.slot).toBe('afternoon');
+    if (s.kind === 'greeting') expect(s.child.name).toBe('Aanya');
   });
 
-  it('all tasks complete + threshold crossing -> all-done takeover', () => {
+  it('all tasks complete + threshold crossing -> takeover', () => {
     // successful_days 12, +1 = 13 (not threshold). Bump to 6 so +1 = 7 (threshold).
     const s = deriveKidState({
       ...base,
       child: { ...child, successful_days: 6 },
       completions: [done('a'), done('b'), done('c')],
     });
-    expect(s.kind).toBe('all-done');
-    if (s.kind === 'all-done') expect(s.variant).toBe('takeover');
+    expect(s.kind).toBe('takeover');
   });
 
-  it('all tasks complete + no threshold -> all-done resting', () => {
+  it('all tasks complete without threshold stays on today (resting = today)', () => {
     const s = deriveKidState({ ...base, completions: [done('a'), done('b'), done('c')] });
-    expect(s.kind).toBe('all-done');
-    if (s.kind === 'all-done') expect(s.variant).toBe('resting');
+    expect(s.kind).toBe('today');
   });
 
   it('simplifiedToday routes to simplified kind', () => {
@@ -90,10 +88,15 @@ describe('deriveKidState', () => {
     if (s.kind === 'today') expect(s.offline).toBe(true);
   });
 
-  it('offline flag propagates to all-done', () => {
-    const s = deriveKidState({ ...base, network: 'offline', completions: [done('a'), done('b'), done('c')] });
-    expect(s.kind).toBe('all-done');
-    if (s.kind === 'all-done') expect(s.offline).toBe(true);
+  it('offline flag propagates to takeover', () => {
+    const s = deriveKidState({
+      ...base,
+      child: { ...child, successful_days: 6 },
+      network: 'offline',
+      completions: [done('a'), done('b'), done('c')],
+    });
+    expect(s.kind).toBe('takeover');
+    if (s.kind === 'takeover') expect(s.offline).toBe(true);
   });
 
   it('offline flag propagates to simplified', () => {
@@ -102,7 +105,7 @@ describe('deriveKidState', () => {
     if (s.kind === 'simplified') expect(s.offline).toBe(true);
   });
 
-  it('zero tasks scheduled returns today (not all-done)', () => {
+  it('zero tasks scheduled returns today (not takeover)', () => {
     const s = deriveKidState({ ...base, tasks: [] });
     expect(s.kind).toBe('today');
   });

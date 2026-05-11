@@ -23,7 +23,7 @@ export default function KidPair() {
       setLoading(false);
       Alert.alert(
         'Pairing not configured',
-        'This iPad is missing the server URL. Ask the person who set up the app to add EXPO_PUBLIC_SERVER_URL to .env.local.',
+        'This iPad is missing the API URL. Ask the person who set up the app to add EXPO_PUBLIC_API_URL to .env.local.',
       );
       return;
     }

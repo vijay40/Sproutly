@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, Text as RNText, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { api } from '../../src/lib/api';
 import { getParentClient } from '../../src/lib/supabase';
 import { setMode } from '../../src/lib/mode';
 import { tapLight } from '../../src/lib/haptics';
@@ -40,15 +41,18 @@ export default function ParentOnboarding() {
 
   useEffect(() => {
     void (async () => {
-      const { data: fam } = await getParentClient().from('families').select('id').limit(1);
-      if (fam?.length) {
-        await setMode('parent');
-        // router.replace('/(parent)/today');
+      try {
+        const me = await api.me.get();
+        if (me.family_id) {
+          await setMode('parent');
+        }
+      } catch {
+        /* stay on onboarding */
       }
     })();
   }, [router]);
 
-  async function save() {
+  async function save(onDone?: () => void) {
     if (!childName.trim() || age === null || saving) {
       if (!childName.trim()) Alert.alert('Child name required');
       else if (age === null) Alert.alert('Age required');
@@ -80,7 +84,11 @@ export default function ParentOnboarding() {
     await setMode('parent');
     tapLight();
     setSaving(false);
-    router.replace('/(parent)/today');
+    if (onDone) {
+      onDone();
+    } else {
+      router.replace('/(parent)/today');
+    }
   }
 
   const tzDisplay = timezone
@@ -160,6 +168,59 @@ export default function ParentOnboarding() {
           placeholder="Select timezone"
           onPress={() => setTzPickerOpen(true)}
         />
+
+        <Label style={{ marginTop: spacing.lg, marginBottom: spacing.s }}>
+          KID-VIEW LOCK (OPTIONAL)
+        </Label>
+        <Pressable
+          onPress={() => {
+            tapLight();
+            void save(() => router.replace('/(first-launch)/create-pin'));
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Set a 4-digit PIN"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.white,
+            borderRadius: 15,
+            padding: 14,
+            shadowColor: '#000',
+            shadowOpacity: 0.04,
+            shadowRadius: 32,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 1,
+          }}
+        >
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.purpleWash,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <RNText style={{ fontSize: 20 }}>🔒</RNText>
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Body>Set a 4-digit PIN</Body>
+            <Caption>Required to exit kid view. You can skip.</Caption>
+          </View>
+          <RNText style={{ fontSize: 22, color: colors.muted }}>›</RNText>
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            tapLight();
+            void save();
+          }}
+          accessibilityRole="button"
+          style={{ alignSelf: 'center', paddingVertical: spacing.s, marginTop: spacing.s }}
+        >
+          <Body color="muted" style={{ fontWeight: '600' }}>Skip for now</Body>
+        </Pressable>
 
         <View style={{ flex: 1 }} />
 
