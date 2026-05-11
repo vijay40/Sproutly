@@ -97,7 +97,9 @@ For each resource `<R>` in {`children`, `tasks`, `cosmetics`, `daily-summaries`,
 
 - [ ] **Step 1: Schemas in api-contract**
 
-Add `Child` (matches DB columns), `CreateChildRequest`, `UpdateChildRequest`, `ChildrenListResponse = z.array(Child)`. Export from `index.ts`. Add `registerChildren(registry)` that describes all three endpoints with example bodies.
+Add `Child` (matches DB columns), `CreateChildRequest`, `UpdateChildRequest`, `ChildrenListResponse = z.array(Child)`. Export from `packages/api-contract/src/index.ts`. Add `registerChildren(registry)` in `packages/api-contract/src/endpoints/children.ts` that describes all three endpoints with example bodies, following the pattern used by `registerMe` / `registerDev`.
+
+Wire it into the central registry: in `packages/api-contract/src/openapi.ts`, import `registerChildren` and call it alongside the existing `registerMe(registry)` / `registerDev(registry)` calls.
 
 - [ ] **Step 2 (TDD): Failing route tests**
 
@@ -118,9 +120,17 @@ Mount in `server/src/index.ts`.
 
 - [ ] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate OpenAPI**
+- [ ] **Step 6: Regenerate and stage OpenAPI**
 
-Run `npm run generate:openapi`. Confirm the yaml diff matches (three new paths, new schemas).
+Run from repo root: `npm run generate:openapi`.
+
+Expected: `packages/api-contract/openapi.yaml` diff shows the three new paths (`/children`, `/children/{id}`) with their schemas and response envelopes. No unrelated churn.
+
+Verify with: `git diff --stat packages/api-contract/openapi.yaml` — only the expected additions.
+
+Verify CI sync test still passes: `npm run test -w @sproutly/api-contract` — the `openapi-in-sync.test.ts` (from Phase A, Task 11) must pass.
+
+The regenerated `openapi.yaml` gets staged and committed together with the rest of the task in Step 10.
 
 - [ ] **Step 7: App client wrapper**
 
@@ -140,8 +150,11 @@ Run server + app. Fresh install → onboarding writes via REST → Today screen 
 
 - [ ] **Step 10: Commit**
 
+Stage includes the regenerated `packages/api-contract/openapi.yaml`.
+
 ```bash
 git add packages/ src/ app/
+git status --short packages/api-contract/openapi.yaml  # confirm it's staged
 git commit -m "feat(api): /children endpoints; migrate app call sites"
 ```
 
@@ -171,7 +184,9 @@ git commit -m "feat(api): /children endpoints; migrate app call sites"
 
 - [ ] **Step 1: Schemas**
 
-Export from api-contract with the shapes above. Include a Zod refine on `CreateTaskRequest` / `UpdateTaskRequest` enforcing the custom-recurrence rule.
+Export from api-contract with the shapes above. Include a Zod refine on `CreateTaskRequest` / `UpdateTaskRequest` enforcing the custom-recurrence rule. Add `registerTasks(registry)` describing all four endpoints.
+
+Wire into the central registry: `packages/api-contract/src/openapi.ts` imports and calls `registerTasks(registry)`.
 
 - [ ] **Step 2 (TDD): Failing tests**
 
@@ -190,7 +205,9 @@ Mock supabase-js; assert queries join through `children` to check `family_id` on
 
 - [ ] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate OpenAPI**
+- [ ] **Step 6: Regenerate and stage OpenAPI**
+
+`npm run generate:openapi`. Expected diff: four new paths (`GET /tasks`, `POST /tasks`, `PATCH /tasks/{id}`, `DELETE /tasks/{id}`) + `Task`, `CreateTaskRequest`, `UpdateTaskRequest` schemas. Run `npm run test -w @sproutly/api-contract` to confirm the drift test passes.
 
 - [ ] **Step 7: App wrapper**
 
@@ -205,6 +222,8 @@ Replace `sb.from('tasks')...` in the four files. `today.tsx` and `tasks.tsx` bec
 Create a task, edit it, soft-delete it. Confirm parent Today + Tasks tab reflect correctly.
 
 - [ ] **Step 10: Commit**
+
+Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
 ```bash
 git add packages/ src/ app/
@@ -230,6 +249,8 @@ git commit -m "feat(api): /tasks endpoints; migrate app call sites"
 
 - [ ] **Step 1: Schemas**
 
+Add schemas + `registerCosmetics(registry)` in `packages/api-contract/src/endpoints/cosmetics.ts`. Wire into `packages/api-contract/src/openapi.ts`.
+
 - [ ] **Step 2 (TDD): Failing tests**
 
 - No token → 401.
@@ -241,13 +262,17 @@ git commit -m "feat(api): /tasks endpoints; migrate app call sites"
 
 - [ ] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate OpenAPI**
+- [ ] **Step 6: Regenerate and stage OpenAPI**
+
+`npm run generate:openapi`. Expected diff: one new path (`GET /cosmetics`) + `Cosmetic` schema. Drift test (`npm run test -w @sproutly/api-contract`) passes.
 
 - [ ] **Step 7: App wrapper** — `api.cosmetics.list()`.
 
 - [ ] **Step 8: Swap call sites** — none exist today. Skip.
 
 - [ ] **Step 9: Commit**
+
+Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
 ```bash
 git add packages/ src/
@@ -272,6 +297,8 @@ git commit -m "feat(api): GET /cosmetics"
 
 - [ ] **Step 1: Schemas**
 
+Add schemas + `registerDailySummaries(registry)` in `packages/api-contract/src/endpoints/daily-summaries.ts`. Wire into `packages/api-contract/src/openapi.ts`.
+
 - [ ] **Step 2 (TDD): Failing tests**
 
 - No token → 401.
@@ -288,13 +315,17 @@ Route validates `child_id` ownership via `children` join. Query parses `from`/`t
 
 - [ ] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate OpenAPI**
+- [ ] **Step 6: Regenerate and stage OpenAPI**
+
+`npm run generate:openapi`. Expected diff: one new path (`GET /daily-summaries`) + `DailySummary` schema. Drift test passes.
 
 - [ ] **Step 7: App wrapper** — `api.dailySummaries.list(...)`.
 
 - [ ] **Step 8: Swap call sites** — none exist today. The endpoint is scaffolded for Phase B2 (`/day-roll`) and later insight UI.
 
 - [ ] **Step 9: Commit**
+
+Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
 ```bash
 git add packages/ src/
@@ -323,6 +354,8 @@ Not included here: `POST /insights/generate` — Phase C.
 
 - [ ] **Step 1: Schemas**
 
+Add schemas + `registerInsights(registry)` in `packages/api-contract/src/endpoints/insights.ts`. Wire into `packages/api-contract/src/openapi.ts`.
+
 - [ ] **Step 2 (TDD): Failing tests**
 
 - List default `state=active` excludes applied/dismissed.
@@ -337,7 +370,9 @@ List: filter by family and state. Apply/Dismiss: update where `id = :id AND fami
 
 - [ ] **Step 5: Run — expect PASS**
 
-- [ ] **Step 6: Regenerate OpenAPI**
+- [ ] **Step 6: Regenerate and stage OpenAPI**
+
+`npm run generate:openapi`. Expected diff: three new paths (`GET /insights`, `POST /insights/{id}/apply`, `POST /insights/{id}/dismiss`) + `Insight` schema. Drift test passes.
 
 - [ ] **Step 7: App wrapper** — `api.insights = { list, apply, dismiss }`.
 
@@ -350,6 +385,8 @@ Replace the three `ai_insights` calls with `api.insights.list / apply / dismiss`
 Seed an insight row in the DB (or let the edge function create one). Confirm it appears on the Today screen, applies and dismisses correctly.
 
 - [ ] **Step 10: Commit**
+
+Stage includes the regenerated `packages/api-contract/openapi.yaml`.
 
 ```bash
 git add packages/ src/ app/
@@ -398,6 +435,8 @@ Run `grep -rn "supabase.from\|\.from('\|\.rpc('" app/ src/ | grep -v node_module
 - [ ] **Step 2: Run tests**
 
 `npm run test` at root. All green.
+
+Also explicitly run the OpenAPI drift check: `npm run generate:openapi && git diff --exit-code packages/api-contract/openapi.yaml`. Expected: exit 0 (no uncommitted drift).
 
 - [ ] **Step 3: Manual smoke**
 
