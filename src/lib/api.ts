@@ -5,6 +5,8 @@ import {
   ChildrenListResponse,
   CosmeticsListResponse,
   CreateChildRequest,
+  CreateFamilyRequest,
+  CreateFamilyResponse,
   CreateTaskRequest,
   DailySummariesListResponse,
   GetMeResponse,
@@ -123,6 +125,14 @@ export const api = {
       requestJson('PATCH', '/me', {
         body: PatchMeRequest.parse(body),
         responseSchema: GetMeResponse,
+        auth: true,
+      }),
+  },
+  families: {
+    create: (body: z.infer<typeof CreateFamilyRequest>) =>
+      requestJson('POST', '/families', {
+        body: CreateFamilyRequest.parse(body),
+        responseSchema: CreateFamilyResponse,
         auth: true,
       }),
   },

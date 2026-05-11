@@ -8,6 +8,7 @@ import { registerChildren } from './endpoints/children.js';
 import { registerCosmetics } from './endpoints/cosmetics.js';
 import { registerDailySummaries } from './endpoints/daily-summaries.js';
 import { registerDev } from './endpoints/dev.js';
+import { registerFamilies } from './endpoints/families.js';
 import { registerInsights } from './endpoints/insights.js';
 import { registerTasks } from './endpoints/tasks.js';
 import { registerHealth } from './endpoints/health.js';
@@ -27,6 +28,7 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
 
   registerHealth(registry);
   registerMe(registry);
+  registerFamilies(registry);
   registerChildren(registry);
   registerTasks(registry);
   registerCosmetics(registry);

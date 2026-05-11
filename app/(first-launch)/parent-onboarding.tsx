@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, Text as RNText, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../../src/lib/api';
-import { getParentClient } from '../../src/lib/supabase';
 import { setMode } from '../../src/lib/mode';
 import { tapLight } from '../../src/lib/haptics';
 import { friendlyLabel, gmtOffset, guessDeviceZone } from '../../src/lib/timezones';
@@ -59,26 +58,18 @@ export default function ParentOnboarding() {
       return;
     }
     setSaving(true);
-    const sb = getParentClient();
-    const { data: session } = await sb.auth.getSession();
-    const userId = session.session?.user?.id;
-    if (!userId) { Alert.alert('Not signed in'); setSaving(false); return; }
-
-    const { data: family, error: fErr } = await sb
-      .from('families')
-      .insert({ parent_user_id: userId, timezone })
-      .select()
-      .single();
-    if (fErr || !family) { Alert.alert('Setup failed', fErr?.message ?? 'Unknown error'); setSaving(false); return; }
 
     try {
+      const me = await api.me.get();
+      if (!me.family_id) {
+        await api.families.create({ timezone });
+      }
       await api.children.create({
         name: childName.trim(),
         age,
         avatar_emoji: avatarEmoji,
       });
     } catch (e) {
-      await sb.from('families').delete().eq('id', family.id);
       Alert.alert('Setup failed', e instanceof Error ? e.message : 'Unknown error');
       setSaving(false);
       return;

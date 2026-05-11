@@ -108,6 +108,47 @@ paths:
                   - family_id
                   - timezone
                   - has_onboarded
+  /families:
+    post:
+      summary: Bootstrap the family row for the signed-in parent
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timezone:
+                  type: string
+                  minLength: 1
+              required:
+                - timezone
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  parent_user_id:
+                    type: string
+                    format: uuid
+                  timezone:
+                    type: string
+                  created_at:
+                    type: string
+                required:
+                  - id
+                  - parent_user_id
+                  - timezone
+                  - created_at
+        "409":
+          description: Family already exists for this parent
   /children:
     get:
       summary: List children in the current family

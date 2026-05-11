@@ -8,6 +8,7 @@ import { healthRoute } from './routes/health.js';
 import { insightsRoute } from './routes/insights.js';
 import { meRoute } from './routes/me.js';
 import { devRoute } from './routes/dev.js';
+import { familiesRoute } from './routes/families.js';
 import { tasksRoute } from './routes/tasks.js';
 import { openapiRoute } from './routes/openapi.js';
 
@@ -17,6 +18,7 @@ export function createApp(): Hono {
   registerRequestLog(app);
   healthRoute(app);
   meRoute(app);
+  familiesRoute(app);
   childrenRoute(app);
   tasksRoute(app);
   cosmeticsRoute(app);
