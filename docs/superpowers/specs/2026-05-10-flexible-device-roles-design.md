@@ -24,10 +24,10 @@ One app, one authenticated principal, two UI modes. Any device — phone or iPad
 - Mode flag persisted so closing the app in kid view reopens in kid view.
 - "Forgot PIN" recovery via parent magic-link re-auth.
 - Deletion of the kid-iPad pairing subsystem end-to-end (table, RPC, RLS, JWT signing, Node server, client token paths, UI).
+- Kid-view data access via the REST API. `useKidScreenState` rewrites reads to `api.me.get()` / `api.children.list()` / `api.tasks.list(...)` / `api.taskCompletions.list(...)` and triggers `api.dayRoll.run({})` on foreground. The Supabase SDK Realtime subscription to `task_completions` INSERTs stays.
 
 ### Out of scope
 
-- REST server cutover (deferred to a later spec).
 - Multi-child support (remains V1 out-of-scope).
 - Android.
 - Biometric PIN unlock (PIN only in V1).
@@ -57,8 +57,9 @@ Two invariants in `wiki/synthesis/v1-scope.md` change:
 │   └── Kid UI (mode flag = 'kid')     │
 │         └─ Exit requires PIN         │
 │                                      │
-│  All reads/writes: Supabase SDK      │
-│  with the parent JWT + parent RLS    │
+│  All data reads/writes: REST server  │
+│  (parent JWT forwarded).             │
+│  Realtime subscription: Supabase SDK.│
 └──────────────────────────────────────┘
 ```
 
@@ -77,10 +78,9 @@ Two invariants in `wiki/synthesis/v1-scope.md` change:
 | `src/lib/kidLock.ts` | **New.** `setPin`, `verifyPin`, `hasPin`, `clearPin`. Hash = sha256 + per-install salt. Attempt counter + lockout timestamp persisted in SecureStore. |
 | `src/lib/supabase.ts` | `getKidClient()` **deleted**. All call sites re-point to `getParentClient()`. |
 | `src/lib/secureStore.ts` | Kid-token helpers (`getKidToken`/`setKidToken`/`clearKidToken`) deleted. PIN helpers added. |
-| `src/lib/server.ts` | **Deleted** (pairing endpoint client). |
-| `src/domain/markTaskComplete.ts` | **New.** Shared helper used by both parent and kid-view task taps. Idempotent by `(task_id, local_date, child_id)`. |
+| `src/lib/server.ts` | **Deleted** (obsolete pairing endpoint client). |
 | Kid scenes | Add `small` (<600) breakpoint: single column, reduced avatar (~180px), stacked layout. Confetti/progress/streak/task row already take width props; smaller defaults at small breakpoint. No new Figma frames — existing iPad K-frames are the reference; implementation adapts them to phone widths. |
-| `src/hooks/useKidScreenState.ts` | Remove any input that assumed kid-token; subscribe to realtime via parent client. |
+| `src/hooks/useKidScreenState.ts` | Rewrite reads to `api.*` wrappers (me, children, tasks, task-completions). Trigger `api.dayRoll.run({})` on foreground before reads. Realtime subscription stays on Supabase SDK via `getParentClient()`. |
 
 ### PIN pad UX
 
@@ -109,7 +109,7 @@ Subscription to `task_completions` INSERTs now runs under the parent session. No
 
 ### Server
 
-`server/` directory deleted entirely. `npm run server*` scripts removed from root `package.json`. `EXPO_PUBLIC_SERVER_URL` env removed. REST cutover (future spec) will recreate from scratch.
+The old pairing server (repo-root `server/`) was deleted when REST Phase A shipped. What remains here: remove the client shim `src/lib/server.ts` and the `EXPO_PUBLIC_SERVER_URL` env. The new `packages/server/` REST server is unrelated and stays.
 
 ## User flows
 
@@ -119,7 +119,7 @@ Subscription to `task_completions` INSERTs now runs under the parent session. No
 
 **C — Exit kid view.** Tap exit → PIN pad (if PIN set) → correct → parent home. Wrong 3x → 30s lockout.
 
-**D — Kid marks task done.** Kid taps tile → `markTaskComplete` under parent session → celebration → task checked.
+**D — Kid marks task done.** Kid taps tile → `api.taskCompletions.create({ task_id, child_id })` under parent session → celebration → task checked.
 
 **E — Relaunch in kid view.** Mode flag persisted → opens straight to kid view. No parent UI flash.
 
@@ -153,7 +153,7 @@ Subscription to `task_completions` INSERTs now runs under the parent session. No
 
 - `kidLock.ts` — PIN hash determinism, verify correct/wrong, rate-limit counter, lockout timestamp math.
 - `mode.ts` — setters/getters, persistence, default.
-- `markTaskComplete.ts` — row shape, idempotency on double-tap.
+- `useKidScreenState` — mocked `api.*` reads; foreground triggers `api.dayRoll.run({})`; realtime channel wires via parent client.
 - `kidScreenState.test.ts` — update to remove any kid-token-era inputs.
 
 ### Manual smoke (post-migration)
@@ -170,12 +170,12 @@ Subscription to `task_completions` INSERTs now runs under the parent session. No
 ### Pre-deploy checks
 
 - `0006_drop_pairing.sql` applies cleanly on reset DB.
-- `grep -r "kid_device\|pairing_code\|getKidClient\|EXPO_PUBLIC_SERVER_URL" app/ src/` returns zero.
-- `server/` gone; `npm run server*` scripts gone.
+- `grep -r "kid_device\|pairing_code\|getKidClient\|EXPO_PUBLIC_SERVER_URL\|markTaskComplete" app/ src/` returns zero (Realtime `supabase.channel(...)` in `useKidScreenState.ts` is expected).
+- `src/lib/server.ts` deleted; `EXPO_PUBLIC_SERVER_URL` removed from `.env.example`. Repo-root `server/` already gone from REST Phase A. `packages/server/` unaffected.
 
 ## Risks
 
-- **Only remaining enforcement layer is client + RLS.** Deleting the server removes the only place we had for server-side validation / rate limits. Accepted because REST cutover comes next and will restore that surface.
+- **Server-side validation lives in the REST server.** The repo-root pairing `server/` was deleted when REST Phase A shipped; `packages/server/` now hosts all server-side rules and is the enforcement layer alongside parent RLS.
 - **Parent forgets to set PIN.** Curious kid could toggle back to parent UI. Mitigation: PIN prompt in initial onboarding; opt-out requires an explicit tap.
 - **Pre-ship cleanup.** This spec assumes no real users on the pairing flow today. If that's wrong, migration plan needs to change.
 
