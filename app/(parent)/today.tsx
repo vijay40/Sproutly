@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/lib/api';
-import { getParentClient } from '../../src/lib/supabase';
 import { todayLocalDate } from '../../src/lib/time';
 import { isTaskScheduledOn } from '../../src/domain/tasks';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
 import { getParentFirstName } from '../../src/lib/userName';
-import type { ChildRow, FamilyRow, TaskCompletionRow, TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
+import type { ChildRow, FamilyRow, TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
 import {
   Body,
   Caption,
@@ -57,7 +56,12 @@ export default function Today() {
   }, []);
 
   const load = useCallback(async () => {
-    const sb = getParentClient();
+    try {
+      await api.dayRoll.run({});
+    } catch (e) {
+      console.warn('day-roll failed', e);
+    }
+
     const [me, children, taskList, insList] = await Promise.all([
       api.me.get(),
       api.children.list(),
@@ -74,16 +78,16 @@ export default function Today() {
           } as FamilyRow)
         : null;
     setFamily(fam);
-    setChild((children[0] as ChildRow | undefined) ?? null);
+    const ch = (children[0] as ChildRow | undefined) ?? null;
+    setChild(ch);
     setTasks(taskList as TaskRowType[]);
 
-    if (fam) {
+    if (fam && ch) {
       const today = todayLocalDate(fam.timezone);
-      const { data: comps } = await sb
-        .from('task_completions')
-        .select('task_id')
-        .eq('local_date', today);
-      setCompletedIds(new Set(((comps ?? []) as Pick<TaskCompletionRow, 'task_id'>[]).map((c) => c.task_id)));
+      const comps = await api.taskCompletions.list({ child_id: ch.id, local_date: today });
+      setCompletedIds(new Set(comps.map((c) => c.task_id)));
+    } else {
+      setCompletedIds(new Set());
     }
 
     setInsight((insList[0] as AiInsightRow | undefined) ?? null);
@@ -104,23 +108,18 @@ export default function Today() {
 
   async function markDone(task: TaskRowType) {
     if (!family || !child) return;
-    const local_date = todayLocalDate(family.timezone);
     tapLight();
     setCompletedIds((prev) => new Set(prev).add(task.id));
-    const { error } = await getParentClient().from('task_completions').insert({
-      task_id: task.id,
-      child_id: child.id,
-      local_date,
-    });
-    if (error) {
+    try {
+      await api.taskCompletions.create({ task_id: task.id, child_id: child.id });
+      tapSuccess();
+    } catch (e) {
       setCompletedIds((prev) => {
         const next = new Set(prev);
         next.delete(task.id);
         return next;
       });
-      Alert.alert('Could not save', error.message);
-    } else {
-      tapSuccess();
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Unknown error');
     }
   }
 

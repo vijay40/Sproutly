@@ -1029,6 +1029,179 @@ paths:
                   - is_dismissed
                   - generated_at
                   - passed_safety_filter
+  /task-completions:
+    post:
+      summary: Mark task complete for a local date (idempotent)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: string
+                  format: uuid
+                child_id:
+                  type: string
+                  format: uuid
+                local_date:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+              required:
+                - task_id
+                - child_id
+              additionalProperties: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  completion:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      task_id:
+                        type: string
+                        format: uuid
+                      child_id:
+                        type: string
+                        format: uuid
+                      local_date:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      completed_at:
+                        type: string
+                        format: date-time
+                      marked_by_parent:
+                        type: boolean
+                    required:
+                      - id
+                      - task_id
+                      - child_id
+                      - local_date
+                      - completed_at
+                      - marked_by_parent
+                  idempotent:
+                    type: boolean
+                required:
+                  - completion
+                  - idempotent
+    get:
+      summary: List task completions for a child on a local date
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    task_id:
+                      type: string
+                      format: uuid
+                    child_id:
+                      type: string
+                      format: uuid
+                    local_date:
+                      type: string
+                      pattern: ^\d{4}-\d{2}-\d{2}$
+                    completed_at:
+                      type: string
+                      format: date-time
+                    marked_by_parent:
+                      type: boolean
+                  required:
+                    - id
+                    - task_id
+                    - child_id
+                    - local_date
+                    - completed_at
+                    - marked_by_parent
+  /day-roll:
+    post:
+      summary: Run lazy day-roll catch-up through yesterday (server timezone authority)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                child_id:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rolled:
+                    type: boolean
+                  today_local_date:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  summaries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        child_id:
+                          type: string
+                          format: uuid
+                        local_date:
+                          type: string
+                          pattern: ^\d{4}-\d{2}-\d{2}$
+                        total_tasks:
+                          type: integer
+                        completed_tasks:
+                          type: integer
+                        was_successful:
+                          type: boolean
+                        stage_bumped:
+                          type: boolean
+                        new_avatar_stage:
+                          type: integer
+                        miss_simplify_draft_id:
+                          type:
+                            - string
+                            - "null"
+                          format: uuid
+                      required:
+                        - child_id
+                        - local_date
+                        - total_tasks
+                        - completed_tasks
+                        - was_successful
+                        - stage_bumped
+                        - new_avatar_stage
+                        - miss_simplify_draft_id
+                  reason:
+                    type: string
+                    enum:
+                      - no_children
+                required:
+                  - rolled
+                  - today_local_date
+                  - summaries
   /dev/impersonate:
     post:
       summary: Mint a dev-only access token (non-production only)

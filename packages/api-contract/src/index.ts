@@ -9,4 +9,6 @@ export * from './endpoints/tasks.js';
 export * from './endpoints/cosmetics.js';
 export * from './endpoints/daily-summaries.js';
 export * from './endpoints/insights.js';
+export * from './endpoints/task-completions.js';
+export * from './endpoints/day-roll.js';
 export { buildOpenApiDocument } from './openapi.js';

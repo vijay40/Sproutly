@@ -6,6 +6,8 @@ import { cosmeticsRoute } from './routes/cosmetics.js';
 import { dailySummariesRoute } from './routes/daily-summaries.js';
 import { healthRoute } from './routes/health.js';
 import { insightsRoute } from './routes/insights.js';
+import { taskCompletionsRoute } from './routes/task-completions.js';
+import { dayRollRoute } from './routes/day-roll.js';
 import { meRoute } from './routes/me.js';
 import { devRoute } from './routes/dev.js';
 import { familiesRoute } from './routes/families.js';
@@ -24,6 +26,8 @@ export function createApp(): Hono {
   cosmeticsRoute(app);
   dailySummariesRoute(app);
   insightsRoute(app);
+  taskCompletionsRoute(app);
+  dayRollRoute(app);
   devRoute(app);
   openapiRoute(app);
   return app;

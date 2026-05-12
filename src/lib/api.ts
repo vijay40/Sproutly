@@ -7,8 +7,12 @@ import {
   CreateChildRequest,
   CreateFamilyRequest,
   CreateFamilyResponse,
+  CreateTaskCompletionRequest,
+  CreateTaskCompletionResponse,
   CreateTaskRequest,
   DailySummariesListResponse,
+  DayRollRequest,
+  DayRollResponse,
   GetMeResponse,
   Insight,
   InsightsListResponse,
@@ -16,6 +20,7 @@ import {
   type PatchMeRequest as PatchMeBody,
   Task,
   TasksListResponse,
+  TaskCompletionsListResponse,
   UpdateChildRequest,
   UpdateTaskRequest,
 } from '@sproutly/api-contract';
@@ -203,6 +208,27 @@ export const api = {
     dismiss: (id: string) =>
       requestJson('POST', `/insights/${encodeURIComponent(id)}/dismiss`, {
         responseSchema: Insight,
+        auth: true,
+      }),
+  },
+  taskCompletions: {
+    list: (params: { child_id: string; local_date?: string }) =>
+      requestJson('GET', withQuery('/task-completions', params), {
+        responseSchema: TaskCompletionsListResponse,
+        auth: true,
+      }),
+    create: (body: z.infer<typeof CreateTaskCompletionRequest>) =>
+      requestJson('POST', '/task-completions', {
+        body: CreateTaskCompletionRequest.parse(body),
+        responseSchema: CreateTaskCompletionResponse,
+        auth: true,
+      }),
+  },
+  dayRoll: {
+    run: (body: z.infer<typeof DayRollRequest> = {}) =>
+      requestJson('POST', '/day-roll', {
+        body: DayRollRequest.parse(body),
+        responseSchema: DayRollResponse,
         auth: true,
       }),
   },

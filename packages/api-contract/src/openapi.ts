@@ -10,6 +10,8 @@ import { registerDailySummaries } from './endpoints/daily-summaries.js';
 import { registerDev } from './endpoints/dev.js';
 import { registerFamilies } from './endpoints/families.js';
 import { registerInsights } from './endpoints/insights.js';
+import { registerTaskCompletions } from './endpoints/task-completions.js';
+import { registerDayRoll } from './endpoints/day-roll.js';
 import { registerTasks } from './endpoints/tasks.js';
 import { registerHealth } from './endpoints/health.js';
 import { registerMe } from './endpoints/me.js';
@@ -34,6 +36,8 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
   registerCosmetics(registry);
   registerDailySummaries(registry);
   registerInsights(registry);
+  registerTaskCompletions(registry);
+  registerDayRoll(registry);
   registerDev(registry);
 
   registry.registerPath({
