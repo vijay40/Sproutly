@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text as RNText, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Body,
   Heading,
@@ -14,7 +14,10 @@ import { tapLight } from '../../src/lib/haptics';
 
 export default function CreatePin() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [pin, setPin] = useState('');
+
+  const afterSkip = returnTo && returnTo.length > 0 ? returnTo : '/(parent)/today';
 
   function onDigit(d: string) {
     if (pin.length >= 4) return;
@@ -22,7 +25,10 @@ export default function CreatePin() {
     setPin(next);
     if (next.length === 4) {
       setTimeout(() => {
-        router.push({ pathname: '/(first-launch)/confirm-pin', params: { first: next } });
+        router.push({
+          pathname: '/(first-launch)/confirm-pin',
+          params: { first: next, returnTo: returnTo ?? '' },
+        });
       }, 120);
     }
   }
@@ -71,7 +77,7 @@ export default function CreatePin() {
       <Pressable
         onPress={() => {
           tapLight();
-          router.replace('/(parent)/today');
+          router.replace(afterSkip as '/(parent)/today');
         }}
         accessibilityRole="button"
         style={{ alignSelf: 'center', paddingVertical: spacing.s, marginBottom: spacing.md }}

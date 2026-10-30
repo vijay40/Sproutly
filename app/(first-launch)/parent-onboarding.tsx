@@ -42,11 +42,12 @@ export default function ParentOnboarding() {
     void (async () => {
       try {
         const me = await api.me.get();
-        if (me.family_id) {
+        if (me.has_onboarded) {
           await setMode('parent');
+          router.replace('/(parent)/today');
         }
       } catch {
-        /* stay on onboarding */
+        /* stay on onboarding — session or network hiccup */
       }
     })();
   }, [router]);

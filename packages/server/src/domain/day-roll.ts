@@ -2,13 +2,18 @@ import { ymdAddDays } from '../lib/local-date.js';
 
 export const SUCCESS_THRESHOLD = 0.6;
 
-/** successful_days AFTER increment → minimum avatar_stage for that streak. */
+/** successful_days AFTER increment → stage for that streak. */
 export const STAGE_THRESHOLDS: ReadonlyMap<number, number> = new Map([
   [7, 2],
   [14, 3],
   [21, 4],
   [30, 5],
 ]);
+
+/** Current stage derived from `successful_days` (1–5). */
+export function stageFromSuccessfulDays(successfulDays: number): number {
+  return targetStageFromSuccessfulDays(successfulDays) ?? 1;
+}
 
 export function datesBetween(fromExclusive: string | null, toInclusive: string, tz: string): string[] {
   if (fromExclusive === null) {
@@ -36,18 +41,6 @@ export function targetStageFromSuccessfulDays(sdAfterIncrement: number): number 
   if (sdAfterIncrement >= 14) return 3;
   if (sdAfterIncrement >= 7) return 2;
   return undefined;
-}
-
-export function computeStageAfterSuccess(
-  currentStage: number,
-  newSuccessfulDays: number,
-): { stage: number; bumped: boolean } {
-  const target = targetStageFromSuccessfulDays(newSuccessfulDays);
-  if (target === undefined) {
-    return { stage: currentStage, bumped: false };
-  }
-  const newStage = Math.max(currentStage, target);
-  return { stage: newStage, bumped: newStage > currentStage };
 }
 
 const SLOT_ORDER: Array<'morning' | 'afternoon' | 'evening'> = ['morning', 'afternoon', 'evening'];
@@ -100,7 +93,6 @@ export type DayRollInput = {
   tasksScheduled: Array<{ id: string; time_slot: string; is_bonus: boolean; is_active: boolean }>;
   completionsForDate: Array<{ task_id: string; id: string }>;
   child: {
-    avatar_stage: number;
     successful_days: number;
     pending_stage_transition: boolean;
   };
@@ -112,7 +104,7 @@ export type DayRollOutput = {
   completed_tasks: number;
   was_successful: boolean;
   next_successful_days: number;
-  next_avatar_stage: number;
+  next_stage: number;
   stage_bumped: boolean;
   next_pending_stage_transition: boolean;
   missSimplifyDraft?: { worst_slot: 'morning' | 'afternoon' | 'evening' };
@@ -131,15 +123,14 @@ export function computeDayRoll(input: DayRollInput): DayRollOutput {
   const currentSd = input.child.successful_days;
   const nextSd = success ? currentSd + 1 : currentSd;
 
-  let nextAvatar = input.child.avatar_stage;
+  const prevStage = stageFromSuccessfulDays(currentSd);
+  const nextStage = stageFromSuccessfulDays(nextSd);
   let stageBumped = false;
   let nextPending = input.child.pending_stage_transition;
 
   if (success) {
-    const { stage, bumped } = computeStageAfterSuccess(input.child.avatar_stage, nextSd);
-    nextAvatar = stage;
-    stageBumped = bumped;
-    if (bumped) nextPending = true;
+    stageBumped = nextStage > prevStage;
+    if (stageBumped) nextPending = true;
   }
 
   const out: DayRollOutput = {
@@ -148,7 +139,7 @@ export function computeDayRoll(input: DayRollInput): DayRollOutput {
     completed_tasks: completed,
     was_successful: success,
     next_successful_days: nextSd,
-    next_avatar_stage: nextAvatar,
+    next_stage: nextStage,
     stage_bumped: stageBumped,
     next_pending_stage_transition: nextPending,
   };

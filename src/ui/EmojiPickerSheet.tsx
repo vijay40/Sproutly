@@ -4,25 +4,38 @@ import { BodyEmphasis } from './Text';
 import { BottomSheet } from './BottomSheet';
 import { tapLight } from '../lib/haptics';
 
-const EMOJI = [
+const AVATAR_EMOJI = [
   '🦄', '🐻', '🐱', '🦊', '🐼',
   '🐸', '🐵', '🐯', '🐨', '🐰',
   '🐶', '🦁', '🦒', '🐙', '🐳',
   '🐧', '🐢', '🐞', '🐝', '🦋',
 ];
 
+const TASK_EMOJI = [
+  '🪥', '🛁', '🧼', '🚿', '🧴',
+  '📚', '📖', '✏️', '🎒', '🧮',
+  '🧹', '🧺', '🛏️', '🍽️', '🥣',
+  '🏃', '⚽', '🎨', '🎵', '🌱',
+];
+
+type Kind = 'avatar' | 'task';
+
 interface Props {
   visible: boolean;
   value: string | null;
   onSelect: (emoji: string) => void;
   onClose: () => void;
+  /** Which emoji set + title to show. Defaults to 'avatar' for backwards-compat. */
+  kind?: Kind;
 }
 
-export function EmojiPickerSheet({ visible, value, onSelect, onClose }: Props) {
+export function EmojiPickerSheet({ visible, value, onSelect, onClose, kind = 'avatar' }: Props) {
+  const emoji = kind === 'task' ? TASK_EMOJI : AVATAR_EMOJI;
+  const title = kind === 'task' ? 'Choose icon' : 'Choose avatar';
   return (
     <BottomSheet visible={visible} onClose={onClose} maxHeight={420}>
       <BodyEmphasis style={{ textAlign: 'center', marginBottom: spacing.md }}>
-        Choose avatar
+        {title}
       </BodyEmphasis>
 
       <View
@@ -33,7 +46,7 @@ export function EmojiPickerSheet({ visible, value, onSelect, onClose }: Props) {
           justifyContent: 'center',
         }}
       >
-        {EMOJI.map((e) => {
+        {emoji.map((e) => {
           const active = e === value;
           return (
             <Pressable
@@ -44,7 +57,7 @@ export function EmojiPickerSheet({ visible, value, onSelect, onClose }: Props) {
                 onClose();
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Avatar ${e}`}
+              accessibilityLabel={`${kind === 'task' ? 'Task icon' : 'Avatar'} ${e}`}
               accessibilityState={{ selected: active }}
               style={({ pressed }) => ({
                 width: 56,

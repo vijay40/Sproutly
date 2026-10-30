@@ -4,14 +4,14 @@ import type { ChildRow, FamilyRow, TaskRow, TaskCompletionRow } from '../types/d
 
 const child: ChildRow = {
   id: 'c1', family_id: 'f1', name: 'Aanya', age: 8, avatar_emoji: '🦄',
-  avatar_stage: 3, successful_days: 12, last_evaluated_date: null,
-  pending_stage_transition: false, cosmetics: [], equipped_cosmetics: {}, created_at: '',
+  successful_days: 12, last_evaluated_date: null,
+  pending_stage_transition: false, created_at: '',
 };
 const family: FamilyRow = { id: 'f1', parent_user_id: null, timezone: 'America/New_York', created_at: '' };
 const t = (id: string): TaskRow => ({
   id, child_id: 'c1', title: id, icon: '🦷', category: 'routine', time_slot: 'morning',
   difficulty: 1, recurrence: 'daily', recurrence_days: null, is_bonus: false,
-  bonus_cosmetic_id: null, is_active: true, created_at: '',
+  is_active: true, created_at: '',
 });
 const done = (taskId: string): TaskCompletionRow => ({
   id: `cmp-${taskId}`, task_id: taskId, child_id: 'c1',
@@ -61,14 +61,27 @@ describe('deriveKidState', () => {
     if (s.kind === 'greeting') expect(s.child.name).toBe('Aanya');
   });
 
-  it('all tasks complete + threshold crossing -> takeover', () => {
-    // successful_days 12, +1 = 13 (not threshold). Bump to 6 so +1 = 7 (threshold).
+  it('all tasks complete + threshold crossing -> today (hook sets pendingEvolution reactively)', () => {
     const s = deriveKidState({
       ...base,
       child: { ...child, successful_days: 6 },
       completions: [done('a'), done('b'), done('c')],
     });
-    expect(s.kind).toBe('takeover');
+    expect(s.kind).toBe('today');
+  });
+
+  it('all tasks complete + threshold + pendingEvolution -> evolution', () => {
+    const s = deriveKidState({
+      ...base,
+      child: { ...child, successful_days: 6 },
+      completions: [done('a'), done('b'), done('c')],
+      pendingEvolution: { fromStage: 3, toStage: 4 },
+    });
+    expect(s.kind).toBe('evolution');
+    if (s.kind === 'evolution') {
+      expect(s.from).toBe(3);
+      expect(s.to).toBe(4);
+    }
   });
 
   it('all tasks complete without threshold stays on today (resting = today)', () => {
@@ -88,15 +101,14 @@ describe('deriveKidState', () => {
     if (s.kind === 'today') expect(s.offline).toBe(true);
   });
 
-  it('offline flag propagates to takeover', () => {
+  it('offline flag propagates to today (all done, non-threshold)', () => {
     const s = deriveKidState({
       ...base,
-      child: { ...child, successful_days: 6 },
       network: 'offline',
       completions: [done('a'), done('b'), done('c')],
     });
-    expect(s.kind).toBe('takeover');
-    if (s.kind === 'takeover') expect(s.offline).toBe(true);
+    expect(s.kind).toBe('today');
+    if (s.kind === 'today') expect(s.offline).toBe(true);
   });
 
   it('offline flag propagates to simplified', () => {
@@ -107,6 +119,23 @@ describe('deriveKidState', () => {
 
   it('zero tasks scheduled returns today (not takeover)', () => {
     const s = deriveKidState({ ...base, tasks: [] });
+    expect(s.kind).toBe('today');
+  });
+
+  it('bonus tasks do not block all-complete (threshold day returns today until hook sets evolution)', () => {
+    const bonus: TaskRow = { ...t('bonus'), is_bonus: true };
+    const s = deriveKidState({
+      ...base,
+      child: { ...child, successful_days: 6 },
+      tasks: [t('a'), t('b'), t('c'), bonus],
+      completions: [done('a'), done('b'), done('c')],
+    });
+    expect(s.kind).toBe('today');
+  });
+
+  it('only-bonus task list does not flip to all-done', () => {
+    const bonus: TaskRow = { ...t('bonus'), is_bonus: true };
+    const s = deriveKidState({ ...base, tasks: [bonus] });
     expect(s.kind).toBe('today');
   });
 });

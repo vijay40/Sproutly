@@ -23,7 +23,6 @@ const taskRow = {
   recurrence: 'daily',
   recurrence_days: null,
   is_bonus: false,
-  bonus_cosmetic_id: null,
   is_active: true,
   created_at: '2026-05-01T12:00:00.000Z',
 };

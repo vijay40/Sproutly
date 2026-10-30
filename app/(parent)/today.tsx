@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/lib/api';
-import { todayLocalDate } from '../../src/lib/time';
 import { isTaskScheduledOn } from '../../src/domain/tasks';
+import { recurrenceLabel } from '../../src/lib/recurrence';
 import { tapLight, tapSuccess } from '../../src/lib/haptics';
 import { getParentFirstName } from '../../src/lib/userName';
 import type { ChildRow, FamilyRow, TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
@@ -31,23 +31,12 @@ type AiInsightRow = {
 
 const SLOTS: TimeSlot[] = ['morning', 'afternoon', 'evening'];
 
-function recurrenceLabel(t: TaskRowType): string {
-  switch (t.recurrence) {
-    case 'daily': return 'Daily';
-    case 'weekdays': return 'Weekdays';
-    case 'one_time': return 'Once';
-    case 'custom': {
-      const short = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return (t.recurrence_days ?? []).map((d) => short[d]).join(', ');
-    }
-  }
-}
-
 export default function Today() {
   const [family, setFamily] = useState<FamilyRow | null>(null);
   const [child, setChild] = useState<ChildRow | null>(null);
   const [tasks, setTasks] = useState<TaskRowType[]>([]);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  // task_id → completion id (for the optimistic-undo path).
+  const [completionByTask, setCompletionByTask] = useState<Map<string, string>>(new Map());
   const [insight, setInsight] = useState<AiInsightRow | null>(null);
   const [parentName, setParentName] = useState<string | null>(null);
 
@@ -83,11 +72,15 @@ export default function Today() {
     setTasks(taskList as TaskRowType[]);
 
     if (fam && ch) {
-      const today = todayLocalDate(fam.timezone);
-      const comps = await api.taskCompletions.list({ child_id: ch.id, local_date: today });
-      setCompletedIds(new Set(comps.map((c) => c.task_id)));
+      // Don't pass local_date — server defaults to family-tz today, which is
+      // authoritative. Hermes lacks full Intl support so `dayjs.tz()` on the
+      // client can silently fall back to device-local TZ.
+      const comps = await api.taskCompletions.list({ child_id: ch.id });
+      const next = new Map<string, string>();
+      for (const c of comps) next.set(c.task_id, c.id);
+      setCompletionByTask(next);
     } else {
-      setCompletedIds(new Set());
+      setCompletionByTask(new Map());
     }
 
     setInsight((insList[0] as AiInsightRow | undefined) ?? null);
@@ -103,23 +96,54 @@ export default function Today() {
   }, [tasks, family, now]);
 
   const scheduledNonBonus = todaysTasks.filter((t) => !t.is_bonus);
-  const doneCount = scheduledNonBonus.filter((t) => completedIds.has(t.id)).length;
+  const doneCount = scheduledNonBonus.filter((t) => completionByTask.has(t.id)).length;
   const totalCount = scheduledNonBonus.length;
 
   async function markDone(task: TaskRowType) {
     if (!family || !child) return;
     tapLight();
-    setCompletedIds((prev) => new Set(prev).add(task.id));
+    // Optimistic placeholder id; replaced with the real completion id on response.
+    const tempId = `optimistic:${task.id}:${Date.now()}`;
+    setCompletionByTask((prev) => new Map(prev).set(task.id, tempId));
     try {
-      await api.taskCompletions.create({ task_id: task.id, child_id: child.id });
+      const res = await api.taskCompletions.create({ task_id: task.id, child_id: child.id });
+      setCompletionByTask((prev) => {
+        const next = new Map(prev).set(task.id, res.completion.id);
+        const scheduled = todaysTasks.filter((t) => !t.is_bonus);
+        const allDone = scheduled.length > 0 && scheduled.every((t) => next.has(t.id));
+        if (allDone) {
+          void api.dayRoll.run({ child_id: child.id, evaluate_today: true }).then(() => load()).catch((e) => {
+            console.warn('evaluate_today after all-done failed', e);
+          });
+        }
+        return next;
+      });
       tapSuccess();
     } catch (e) {
-      setCompletedIds((prev) => {
-        const next = new Set(prev);
+      setCompletionByTask((prev) => {
+        const next = new Map(prev);
         next.delete(task.id);
         return next;
       });
       Alert.alert('Could not save', e instanceof Error ? e.message : 'Unknown error');
+    }
+  }
+
+  async function markUndone(task: TaskRowType) {
+    if (!family || !child) return;
+    const completionId = completionByTask.get(task.id);
+    if (!completionId || completionId.startsWith('optimistic:')) return;
+    tapLight();
+    setCompletionByTask((prev) => {
+      const next = new Map(prev);
+      next.delete(task.id);
+      return next;
+    });
+    try {
+      await api.taskCompletions.delete(completionId);
+    } catch (e) {
+      setCompletionByTask((prev) => new Map(prev).set(task.id, completionId));
+      Alert.alert('Could not undo', e instanceof Error ? e.message : 'Unknown error');
     }
   }
 
@@ -190,8 +214,12 @@ export default function Today() {
       {SLOTS.map((slot) => {
         const slotTasks = todaysTasks.filter((t) => t.time_slot === slot);
         if (slotTasks.length === 0) return null;
-        const pending = slotTasks.filter((t) => !completedIds.has(t.id));
-        const done = slotTasks.filter((t) => completedIds.has(t.id));
+        // Bonus is always last within its bucket (last among pending, last
+        // among done) — matches the kid-view ordering rule.
+        const bonusLast = (a: TaskRowType, b: TaskRowType) =>
+          Number(a.is_bonus) - Number(b.is_bonus);
+        const pending = slotTasks.filter((t) => !completionByTask.has(t.id)).sort(bonusLast);
+        const done = slotTasks.filter((t) => completionByTask.has(t.id)).sort(bonusLast);
         return (
           <View key={slot}>
             <SlotLabel>{slot.toUpperCase()}</SlotLabel>
@@ -214,16 +242,34 @@ export default function Today() {
                   title={t.title}
                   subtitle={recurrenceLabel(t)}
                   variant="completed"
+                  bonusBadge={t.is_bonus}
                   trailing={
-                    <View
-                      style={{
-                        width: 28, height: 28, borderRadius: 14,
-                        backgroundColor: colors.sage,
-                        alignItems: 'center', justifyContent: 'center',
-                      }}
+                    <Pressable
+                      onPress={() => void markUndone(t)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Mark ${t.title} as not done`}
+                      style={({ pressed }) => ({
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        borderRadius: 999,
+                        backgroundColor: pressed ? colors.sage : 'transparent',
+                      })}
                     >
-                      <Icons.CheckIcon size={16} color={colors.sageInk} />
-                    </View>
+                      <View
+                        style={{
+                          width: 28, height: 28, borderRadius: 14,
+                          backgroundColor: colors.sage,
+                          alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        <Icons.CheckIcon size={16} color={colors.sageInk} />
+                      </View>
+                      <Caption color="purple" style={{ fontWeight: '600' }}>Reopen</Caption>
+                    </Pressable>
                   }
                 />
               </View>

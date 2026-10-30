@@ -41,12 +41,13 @@ export const FRAME_W = 1194;
 export const FRAME_H = 834;
 
 /**
- * Avatar stage → emoji / display name. Keyed by `children.avatar_stage` (0-5).
+ * Avatar stage → emoji / display name. Keyed by derived stage (1–5) from successful_days.
  * The child's avatar is always derived from their current stage — never from
  * a free-form `avatar_emoji` field.
  */
 export const STAGE_EMOJI = ['🥚', '🐣', '🐴', '✨', '🦄', '🌟'] as const;
-export const STAGE_NAMES = ['Egg', 'Hatchling', 'Foal', 'Sparky', 'Unicorn', 'Starborn'] as const;
+/** Indices 1–5 match derived stage from successful_days. Aligns with K3-Phone · Today Figma chip labels. */
+export const STAGE_NAMES = ['Egg', 'Egg', 'Foal', 'Sparky', 'Unicorn', 'Alicorn'] as const;
 
 export function stageEmoji(stage: number): string {
   return STAGE_EMOJI[stage] ?? STAGE_EMOJI[STAGE_EMOJI.length - 1];

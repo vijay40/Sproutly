@@ -1,42 +1,64 @@
 import * as SecureStore from 'expo-secure-store';
-import * as Crypto from 'expo-crypto';
 
-const HASH_KEY = 'kid.lock.hash';
-const SALT_KEY = 'kid.lock.salt';
+const PIN_KEY = 'kid.lock.pin';
+const FAILURES_KEY = 'kid.lock.failures';
+const LOCKOUT_UNTIL_KEY = 'kid.lock.lockout_until';
 
-async function randomSalt(): Promise<string> {
-  const bytes = await Crypto.getRandomBytesAsync(16);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function hash(pin: string, salt: string): Promise<string> {
-  return Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    `${salt}:${pin}`,
-  );
-}
+const LOCKOUT_MS = 30_000;
 
 export async function setPin(pin: string): Promise<void> {
-  const salt = await randomSalt();
-  const h = await hash(pin, salt);
-  await SecureStore.setItemAsync(SALT_KEY, salt);
-  await SecureStore.setItemAsync(HASH_KEY, h);
+  await SecureStore.setItemAsync(PIN_KEY, pin);
 }
 
 export async function hasPin(): Promise<boolean> {
-  const h = await SecureStore.getItemAsync(HASH_KEY);
-  return !!h;
+  const stored = await SecureStore.getItemAsync(PIN_KEY);
+  return !!stored;
 }
 
 export async function verifyPin(pin: string): Promise<boolean> {
-  const salt = await SecureStore.getItemAsync(SALT_KEY);
-  const stored = await SecureStore.getItemAsync(HASH_KEY);
-  if (!salt || !stored) return false;
-  const h = await hash(pin, salt);
-  return h === stored;
+  const stored = await SecureStore.getItemAsync(PIN_KEY);
+  return !!stored && stored === pin;
+}
+
+/** Returns the current PIN, or null if none set. Used by the "Show PIN" toggle in parent settings. */
+export async function getPin(): Promise<string | null> {
+  return SecureStore.getItemAsync(PIN_KEY);
 }
 
 export async function clearPin(): Promise<void> {
-  await SecureStore.deleteItemAsync(HASH_KEY);
-  await SecureStore.deleteItemAsync(SALT_KEY);
+  await SecureStore.deleteItemAsync(PIN_KEY);
+}
+
+export async function recordFailure(): Promise<void> {
+  const raw = await SecureStore.getItemAsync(FAILURES_KEY);
+  const n = raw ? Number.parseInt(raw, 10) || 0 : 0;
+  const next = n + 1;
+  if (next >= 3) {
+    const until = String(Date.now() + LOCKOUT_MS);
+    await SecureStore.setItemAsync(LOCKOUT_UNTIL_KEY, until);
+    await SecureStore.deleteItemAsync(FAILURES_KEY);
+  } else {
+    await SecureStore.setItemAsync(FAILURES_KEY, String(next));
+  }
+}
+
+export async function clearFailures(): Promise<void> {
+  await SecureStore.deleteItemAsync(FAILURES_KEY);
+  await SecureStore.deleteItemAsync(LOCKOUT_UNTIL_KEY);
+}
+
+export async function lockoutMsRemaining(): Promise<number> {
+  const raw = await SecureStore.getItemAsync(LOCKOUT_UNTIL_KEY);
+  if (!raw) return 0;
+  const until = Number.parseInt(raw, 10);
+  if (!Number.isFinite(until)) return 0;
+  return Math.max(0, until - Date.now());
+}
+
+/** Consecutive wrong PIN attempts since last success or lockout (0–2). */
+export async function failureCount(): Promise<number> {
+  const raw = await SecureStore.getItemAsync(FAILURES_KEY);
+  if (!raw) return 0;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) ? n : 0;
 }

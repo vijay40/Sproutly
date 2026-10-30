@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { registerErrorHandler } from './middleware/errors.js';
 import { registerRequestLog } from './middleware/request-log.js';
 import { childrenRoute } from './routes/children.js';
-import { cosmeticsRoute } from './routes/cosmetics.js';
 import { dailySummariesRoute } from './routes/daily-summaries.js';
 import { healthRoute } from './routes/health.js';
 import { insightsRoute } from './routes/insights.js';
@@ -23,7 +22,6 @@ export function createApp(): Hono {
   familiesRoute(app);
   childrenRoute(app);
   tasksRoute(app);
-  cosmeticsRoute(app);
   dailySummariesRoute(app);
   insightsRoute(app);
   taskCompletionsRoute(app);

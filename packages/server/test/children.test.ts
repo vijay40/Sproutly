@@ -19,12 +19,9 @@ const baseChild = {
   name: 'Alex',
   age: 7,
   avatar_emoji: '🦄',
-  avatar_stage: 1,
   successful_days: 0,
   last_evaluated_date: null,
   pending_stage_transition: false,
-  cosmetics: [],
-  equipped_cosmetics: {},
   created_at: '2026-05-01T12:00:00.000Z',
 };
 
@@ -223,11 +220,11 @@ describe('/children', () => {
     expect(res.status).toBe(403);
   });
 
-  it('PATCH returns 422 for invalid avatar_stage jump', async () => {
+  it('PATCH returns 422 for unknown fields', async () => {
     setDbForTests(
       mockDb({
         family: { id: famId, timezone: 'America/Los_Angeles' },
-        maybeChild: { ...baseChild, avatar_stage: 1 },
+        maybeChild: baseChild,
       }),
     );
     const app = createApp();
@@ -239,12 +236,12 @@ describe('/children', () => {
     expect(res.status).toBe(422);
   });
 
-  it('PATCH returns 200 for single-step avatar advance', async () => {
-    const updated = { ...baseChild, avatar_stage: 2 };
+  it('PATCH returns 200 for name update', async () => {
+    const updated = { ...baseChild, name: 'Alexa' };
     setDbForTests(
       mockDb({
         family: { id: famId, timezone: 'America/Los_Angeles' },
-        maybeChild: { ...baseChild, avatar_stage: 1 },
+        maybeChild: baseChild,
         updateResult: updated,
       }),
     );
@@ -252,9 +249,9 @@ describe('/children', () => {
     const res = await app.request(`http://test/children/${childId}`, {
       method: 'PATCH',
       headers: { Authorization: bearer(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avatar_stage: 2 }),
+      body: JSON.stringify({ name: 'Alexa' }),
     });
     expect(res.status).toBe(200);
-    expect((await res.json()).avatar_stage).toBe(2);
+    expect((await res.json()).name).toBe('Alexa');
   });
 });

@@ -15,12 +15,9 @@ export interface ChildRow {
   name: string;
   age: number | null;
   avatar_emoji: string | null;
-  avatar_stage: number;
   successful_days: number;
   last_evaluated_date: string | null;
   pending_stage_transition: boolean;
-  cosmetics: string[];
-  equipped_cosmetics: Record<string, string>;
   created_at: string;
 }
 
@@ -35,7 +32,6 @@ export interface TaskRow {
   recurrence: Recurrence;
   recurrence_days: number[] | null;
   is_bonus: boolean;
-  bonus_cosmetic_id: string | null;
   is_active: boolean;
   created_at: string;
 }

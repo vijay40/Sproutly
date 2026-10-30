@@ -3,13 +3,13 @@ import {
   ApiErrorBodySchema,
   Child,
   ChildrenListResponse,
-  CosmeticsListResponse,
   CreateChildRequest,
   CreateFamilyRequest,
   CreateFamilyResponse,
   CreateTaskCompletionRequest,
   CreateTaskCompletionResponse,
   CreateTaskRequest,
+  DeleteTaskCompletionResponse,
   DailySummariesListResponse,
   DayRollRequest,
   DayRollResponse,
@@ -62,10 +62,12 @@ async function requestJson<T>(
 ): Promise<T> {
   const base = apiBaseUrl();
   if (!base) {
+    console.warn('[api] EXPO_PUBLIC_API_URL is not set — requests will fail');
     throw new ApiError('INTERNAL', 'EXPO_PUBLIC_API_URL is not configured');
   }
 
   const url = `${base.replace(/\/$/, '')}${path}`;
+  console.log(`[api] ${method} ${url}`);
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
@@ -91,6 +93,7 @@ async function requestJson<T>(
   };
 
   let res = await doFetch();
+  console.log(`[api] ${method} ${url} → ${res.status}`);
 
   if (res.status === 401 && opts.auth) {
     const { error } = await getParentClient().auth.refreshSession();
@@ -184,9 +187,6 @@ export const api = {
         auth: true,
       }),
   },
-  cosmetics: {
-    list: () => requestJson('GET', '/cosmetics', { responseSchema: CosmeticsListResponse, auth: true }),
-  },
   dailySummaries: {
     list: (params: { child_id: string; from?: string; to?: string }) =>
       requestJson('GET', withQuery('/daily-summaries', params), {
@@ -221,6 +221,11 @@ export const api = {
       requestJson('POST', '/task-completions', {
         body: CreateTaskCompletionRequest.parse(body),
         responseSchema: CreateTaskCompletionResponse,
+        auth: true,
+      }),
+    delete: (id: string) =>
+      requestJson('DELETE', `/task-completions/${encodeURIComponent(id)}`, {
+        responseSchema: DeleteTaskCompletionResponse,
         auth: true,
       }),
   },

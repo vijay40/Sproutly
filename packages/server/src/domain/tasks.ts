@@ -17,7 +17,6 @@ export interface TaskRowLike {
   recurrence: 'daily' | 'weekdays' | 'custom' | 'one_time';
   recurrence_days: number[] | null;
   is_bonus: boolean;
-  bonus_cosmetic_id: string | null;
   is_active: boolean;
   created_at: string;
 }

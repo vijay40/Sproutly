@@ -40,6 +40,12 @@ export type TaskCompletionsListQuery = z.infer<typeof TaskCompletionsListQuery>;
 export const TaskCompletionsListResponse = z.array(TaskCompletion);
 export type TaskCompletionsListResponse = z.infer<typeof TaskCompletionsListResponse>;
 
+export const DeleteTaskCompletionResponse = z.object({
+  deleted: z.boolean(),
+});
+
+export type DeleteTaskCompletionResponse = z.infer<typeof DeleteTaskCompletionResponse>;
+
 export function registerTaskCompletions(registry: OpenAPIRegistry): void {
   registry.registerPath({
     method: 'post',
@@ -66,6 +72,22 @@ export function registerTaskCompletions(registry: OpenAPIRegistry): void {
       200: {
         description: 'OK',
         content: { 'application/json': { schema: TaskCompletionsListResponse } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/task-completions/{id}',
+    summary: 'Undo a task completion by id (parent only)',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ id: Uuid }),
+    },
+    responses: {
+      200: {
+        description: 'OK',
+        content: { 'application/json': { schema: DeleteTaskCompletionResponse } },
       },
     },
   });

@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { AppMode, getMode } from '../src/lib/mode';
+import { AppMode, exitKidView, getMode } from '../src/lib/mode';
 import { api } from '../src/lib/api';
 import { consumeAuthSessionFromUrl, getParentClient } from '../src/lib/supabase';
 import { useAppFonts } from '../src/fonts';
@@ -47,11 +47,19 @@ export default function RootLayout() {
       if (stored === null && inGroup !== '(first-launch)' && inGroup !== '(kid)') {
         router.replace('/(first-launch)');
       } else if (stored === 'parent') {
+        const { data } = await getParentClient().auth.getSession();
+        if (cancelled) return;
+        if (!data.session) {
+          router.replace('/(first-launch)/parent-auth');
+          return;
+        }
         let familyId: string | null = null;
         try {
           const me = await api.me.get();
           familyId = me.family_id;
-        } catch {
+          console.log('[layout] /me OK — family_id:', familyId);
+        } catch (e) {
+          console.warn('[layout] /me failed:', e instanceof Error ? e.message : String(e));
           familyId = null;
         }
         if (cancelled) return;
@@ -59,11 +67,20 @@ export default function RootLayout() {
           router.replace('/(first-launch)/parent-onboarding');
           return;
         }
-        if (inGroup !== '(parent)' && inGroup !== '(kid)') {
+        if (inGroup !== '(parent)' && inGroup !== '(kid)' && inGroup !== '(first-launch)') {
           router.replace('/(parent)/today');
         }
-      } else if (stored === 'kid' && inGroup !== '(kid)') {
-        router.replace('/(kid)/display');
+      } else if (stored === 'kid') {
+        const { data } = await getParentClient().auth.getSession();
+        if (cancelled) return;
+        if (!data.session) {
+          await exitKidView();
+          router.replace('/(first-launch)/parent-auth');
+          return;
+        }
+        if (inGroup !== '(kid)') {
+          router.replace('/(kid)/display');
+        }
       }
     })();
     return () => {

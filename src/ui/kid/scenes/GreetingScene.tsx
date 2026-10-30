@@ -2,9 +2,11 @@ import { View, Text, useWindowDimensions } from 'react-native';
 import type { ChildRow } from '../../../types/db';
 import { KidBackgroundPurple } from '../parts/KidBackground';
 import { AvatarCircle } from '../parts/AvatarCircle';
+import { stageFromSuccessfulDays } from '../../../domain/stageFromSuccessfulDays';
 import { kidInk, kidMuted, stageEmoji } from '../theme';
 
 export function GreetingScene({ child }: { child: ChildRow }) {
+  const stage = stageFromSuccessfulDays(child.successful_days);
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
   const small = width < 600;
@@ -28,7 +30,7 @@ export function GreetingScene({ child }: { child: ChildRow }) {
       }}
     >
       <KidBackgroundPurple />
-      <AvatarCircle emoji={stageEmoji(child.avatar_stage)} size={orbSize} />
+      <AvatarCircle emoji={stageEmoji(stage)} size={orbSize} />
       <Text
         style={{
           fontSize: titleSize,

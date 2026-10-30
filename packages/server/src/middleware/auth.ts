@@ -1,13 +1,40 @@
 import { createMiddleware } from 'hono/factory';
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '@sproutly/api-contract';
 import { env } from '../env.js';
 import { getDb } from '../db/client.js';
 
-function jwtSecret(): string {
-  return process.env.VITEST === 'true'
-    ? (process.env.SUPABASE_JWT_SECRET ?? 'test-jwt-secret')
-    : env.SUPABASE_JWT_SECRET;
+const JWKS_URL = new URL(`${env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`);
+const remoteJwks = createRemoteJWKSet(JWKS_URL);
+
+async function verifyToken(token: string): Promise<JWTPayload> {
+  // In Vitest, tests sign HS256 tokens inline with SUPABASE_JWT_SECRET; skip JWKS.
+  if (process.env.VITEST === 'true') {
+    const secret = process.env.SUPABASE_JWT_SECRET ?? 'test-jwt-secret';
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    if (typeof decoded === 'string' || !decoded) throw new Error('Invalid payload');
+    return decoded as JWTPayload;
+  }
+
+  // Production: verify against the Supabase project's JWKS (asymmetric signing keys).
+  try {
+    const { payload } = await jwtVerify(token, remoteJwks);
+    return payload;
+  } catch (jwksErr) {
+    // Legacy projects still sign with HS256 + a shared secret. If one is
+    // configured, fall back so either key model works.
+    if (env.SUPABASE_JWT_SECRET) {
+      try {
+        const decoded = jwt.verify(token, env.SUPABASE_JWT_SECRET, { algorithms: ['HS256'] });
+        if (typeof decoded === 'string' || !decoded) throw new Error('Invalid payload');
+        return decoded as JWTPayload;
+      } catch {
+        throw jwksErr;
+      }
+    }
+    throw jwksErr;
+  }
 }
 
 export type RequestCtx = {
@@ -37,12 +64,11 @@ export function authMiddleware(opts: AuthOpts) {
     const token = authz.slice('Bearer '.length).trim();
     let sub: string;
     try {
-      const decoded = jwt.verify(token, jwtSecret(), { algorithms: ['HS256'] });
-      if (typeof decoded === 'string' || !decoded || typeof decoded !== 'object' || !('sub' in decoded)) {
+      const payload = await verifyToken(token);
+      if (!payload || typeof payload !== 'object' || !payload.sub) {
         throw new ApiError('UNAUTHENTICATED', 'Invalid token payload');
       }
-      sub = String((decoded as jwt.JwtPayload).sub);
-      if (!sub) throw new ApiError('UNAUTHENTICATED', 'Invalid token subject');
+      sub = String(payload.sub);
     } catch (e) {
       if (e instanceof ApiError) throw e;
       throw new ApiError('UNAUTHENTICATED', 'Invalid or expired token');

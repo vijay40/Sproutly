@@ -4,7 +4,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { api } from '../../src/lib/api';
 import { getParentClient } from '../../src/lib/supabase';
 import { clearMode } from '../../src/lib/mode';
-import { relativeTime } from '../../src/lib/relativeTime';
 import { tapLight } from '../../src/lib/haptics';
 import type { ChildRow } from '../../src/types/db';
 import {
@@ -16,65 +15,31 @@ import {
   Display,
   IconTile,
   Icons,
-  PairCodeSheet,
   Screen,
-  SecondaryButton,
   TextButton,
   SectionHeader,
 } from '../../src/ui';
 import { spacing } from '../../src/theme/tokens';
 
-type DeviceRow = { id: string; device_label: string | null; paired_at: string | null; device_token_hash: string | null };
-
 export default function Settings() {
   const router = useRouter();
   const [child, setChild] = useState<ChildRow | null>(null);
-  const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [email, setEmail] = useState<string>('');
   const [timezone, setTimezone] = useState<string>('');
-  const [pairing, setPairing] = useState<{ code: string; expiresAt: Date } | null>(null);
 
   const load = useCallback(async () => {
     const sb = getParentClient();
-    const [{ data: devs }, { data: session }, me, children] = await Promise.all([
-      sb.from('kid_devices').select('id, device_label, paired_at, device_token_hash').not('device_token_hash', 'is', null),
+    const [{ data: session }, me, children] = await Promise.all([
       sb.auth.getSession(),
       api.me.get(),
       api.children.list(),
     ]);
     setChild((children[0] as ChildRow | undefined) ?? null);
-    setDevices(((devs ?? []) as DeviceRow[]));
     setEmail(session.session?.user?.email ?? '');
     setTimezone(me.timezone ?? '');
   }, []);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
-
-  async function generatePairingCode() {
-    tapLight();
-    const { data, error } = await getParentClient().rpc('create_pairing_code');
-    if (error) return Alert.alert('Error', error.message);
-    const row = Array.isArray(data) ? data[0] : data;
-    const code = row?.pairing_code as string | undefined;
-    const expiresAtRaw = row?.expires_at as string | undefined;
-    if (!code || !expiresAtRaw) return Alert.alert('Error', 'Could not generate pairing code.');
-    setPairing({ code, expiresAt: new Date(expiresAtRaw) });
-    void load();
-  }
-
-  async function removeDevice(id: string) {
-    Alert.alert('Remove iPad?', 'This will sign out that iPad.', [
-      { text: 'Cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          await getParentClient().from('kid_devices').delete().eq('id', id);
-          void load();
-        },
-      },
-    ]);
-  }
 
   async function signOut() {
     Alert.alert('Sign out?', 'You will return to the setup screen.', [
@@ -108,25 +73,25 @@ export default function Settings() {
         </Card>
       )}
 
-      <SectionHeader title="Paired iPads" />
-      {devices.map((d) => (
-        <Card key={d.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm }}>
-          <IconTile tint="sky" size={40} emoji="📱" />
-          <View style={{ flex: 1 }}>
-            <BodyEmphasis>{d.device_label ?? 'Kid iPad'}</BodyEmphasis>
-            <Caption>{d.paired_at ? `Paired ${relativeTime(new Date(d.paired_at))}` : 'Paired'}</Caption>
-          </View>
-          <Pressable onPress={() => removeDevice(d.id)} accessibilityLabel="Remove iPad">
-            <Icons.ChevronRightIcon />
-          </Pressable>
-        </Card>
-      ))}
-      <SecondaryButton
-        title={devices.length === 0 ? '+ Pair an iPad' : '+ Pair another iPad'}
-        fullWidth
-        onPress={generatePairingCode}
-        style={{ marginTop: devices.length === 0 ? 0 : spacing.xs }}
-      />
+      <SectionHeader title="Kid view" />
+      <Card style={{ marginBottom: spacing.sm }}>
+        <BodyEmphasis>Kid-view PIN</BodyEmphasis>
+        <Caption style={{ marginTop: 4 }}>Require a PIN to exit kid view on this device.</Caption>
+        <Pressable
+          onPress={() => {
+            tapLight();
+            router.push('/(parent)/pin-settings');
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md }}
+          accessibilityRole="button"
+          accessibilityLabel="Kid-view PIN settings"
+        >
+          <Body color="purple" style={{ fontWeight: '600' }}>
+            Manage PIN
+          </Body>
+          <Icons.ChevronRightIcon />
+        </Pressable>
+      </Card>
 
       <SectionHeader title="Account" />
       <Card>
@@ -135,13 +100,6 @@ export default function Settings() {
       </Card>
 
       <DangerButton title="Sign out" fullWidth onPress={signOut} style={{ marginTop: spacing.lg }} />
-
-      <PairCodeSheet
-        visible={pairing !== null}
-        code={pairing?.code ?? null}
-        expiresAt={pairing?.expiresAt ?? null}
-        onClose={() => setPairing(null)}
-      />
     </Screen>
   );
 }

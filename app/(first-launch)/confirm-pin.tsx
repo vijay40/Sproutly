@@ -14,9 +14,11 @@ import { setPin as savePin } from '../../src/lib/kidLock';
 
 export default function ConfirmPin() {
   const router = useRouter();
-  const { first } = useLocalSearchParams<{ first: string }>();
+  const { first, returnTo } = useLocalSearchParams<{ first: string; returnTo?: string }>();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+
+  const afterSave = returnTo && returnTo.length > 0 ? returnTo : '/(parent)/today';
 
   async function onDigit(d: string) {
     if (pin.length >= 4) return;
@@ -32,7 +34,16 @@ export default function ConfirmPin() {
           setPin('');
           return;
         }
-        router.replace('/(parent)/today');
+        Alert.alert(
+          'PIN set',
+          'Kid view is now protected by your PIN. You can view or change it anytime in Settings.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace(afterSave as '/(parent)/today'),
+            },
+          ],
+        );
       } else {
         setError(true);
         setTimeout(() => {

@@ -16,7 +16,6 @@ export const Task = z.object({
   recurrence: Recurrence,
   recurrence_days: z.array(z.number().int()).nullable(),
   is_bonus: z.boolean(),
-  bonus_cosmetic_id: z.string().nullable(),
   is_active: z.boolean(),
   created_at: Iso8601,
 });
@@ -51,7 +50,6 @@ export const CreateTaskRequest = z
     difficulty: z.number().int().min(1).max(3).optional(),
     recurrence_days: z.array(z.number().int()).nullable().optional(),
     is_bonus: z.boolean().optional(),
-    bonus_cosmetic_id: z.string().nullable().optional(),
   })
   .strict()
   .refine(customRecurrenceOk, {
@@ -71,7 +69,6 @@ export const UpdateTaskRequest = z
     difficulty: z.number().int().min(1).max(3).optional(),
     recurrence_days: z.array(z.number().int()).nullable().optional(),
     is_bonus: z.boolean().optional(),
-    bonus_cosmetic_id: z.string().nullable().optional(),
   })
   .strict()
   .refine(

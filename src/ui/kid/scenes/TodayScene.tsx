@@ -1,13 +1,15 @@
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import type { ChildRow, FamilyRow, TaskRow, TaskCompletionRow } from '../../../types/db';
 import { KidBackgroundPurple } from '../parts/KidBackground';
-import { TaskRow as TaskRowTile } from '../parts/TaskRow';
+import { AnimatedTaskList } from '../parts/AnimatedTaskList';
 import { AvatarCircle } from '../parts/AvatarCircle';
+import { StageAvatarImage } from '../parts/StageAvatarImage';
 import { ProgressRail } from '../parts/ProgressRail';
 import { StreakCard } from '../parts/StreakCard';
 import { StageChip } from '../parts/StageChip';
 import { HintPill } from '../parts/HintPill';
 import { ExitLock } from '../parts/ExitLock';
+import { stageFromSuccessfulDays } from '../../../domain/stageFromSuccessfulDays';
 import { kidInk, kidMuted, stageEmoji, stageName } from '../theme';
 
 function greetingHeader(hour: number): string {
@@ -23,6 +25,7 @@ interface Props {
   child: ChildRow;
   family: FamilyRow;
   now?: Date;
+  onIncompleteTaskPress?: (task: TaskRow) => void;
 }
 
 export function TodayScene(props: Props) {
@@ -34,30 +37,40 @@ export function TodayScene(props: Props) {
       {small ? (
         <SmallPortraitLayout {...props} width={width} />
       ) : landscape ? (
-        <LandscapeLayout {...props} />
+        <>
+          <LandscapeLayout {...props} />
+          <ExitLock size={44} variant="absolute" />
+        </>
       ) : (
-        <PortraitLayout {...props} />
+        <>
+          <PortraitLayout {...props} />
+          <ExitLock size={44} variant="absolute" />
+        </>
       )}
-      <ExitLock size={small ? 32 : 44} />
     </View>
   );
 }
 
 function useCommon({ tasks, completions, child, family, now = new Date() }: Props) {
   const doneIds = new Set(completions.map((c) => c.task_id));
-  const doneCount = tasks.filter((t) => doneIds.has(t.id)).length;
-  const total = tasks.length;
+  // Progress + "all done" use scheduled (non-bonus) tasks only. Bonus tasks
+  // appear in the list but don't block all-complete or the progress rail.
+  const scheduled = tasks.filter((t) => !t.is_bonus);
+  const doneCount = scheduled.filter((t) => doneIds.has(t.id)).length;
+  const total = scheduled.length;
   const hour = Number(
     new Intl.DateTimeFormat('en-US', { timeZone: family.timezone, hour: 'numeric', hour12: false }).format(now),
   );
   const allDone = total > 0 && doneCount === total;
+  const stageNum = stageFromSuccessfulDays(child.successful_days);
   return {
     doneCount,
     total,
     hour,
     allDone,
-    stage: stageName(child.avatar_stage),
-    emoji: stageEmoji(child.avatar_stage),
+    stageNum,
+    stage: stageName(stageNum),
+    emoji: stageEmoji(stageNum),
     nextIn: Math.max(0, total - doneCount),
   };
 }
@@ -70,8 +83,9 @@ const TASK_ROW_H = 81;
 const TASK_GAP = 10;
 
 function LandscapeLayout(props: Props) {
-  const { tasks, completions, child } = props;
-  const { doneCount, total, hour, allDone, stage, emoji, nextIn } = useCommon(props);
+  const { tasks, completions, child, onIncompleteTaskPress } = props;
+  const { doneCount, total, hour, allDone, stage, stageNum, emoji, nextIn } = useCommon(props);
+  const rowStride = TASK_ROW_H + TASK_GAP;
 
   // Tasks start at y=230; progress+hint need ~200 below that. Expand content
   // height if 3+ tasks would push past the base frame height.
@@ -120,11 +134,13 @@ function LandscapeLayout(props: Props) {
             TODAY
           </Text>
 
-          <View style={{ marginTop: 12, gap: TASK_GAP }}>
-            {tasks.map((t) => (
-              <TaskRowTile key={t.id} task={t} completion={completions.find((c) => c.task_id === t.id) ?? null} />
-            ))}
-          </View>
+          <AnimatedTaskList
+            tasks={tasks}
+            completions={completions}
+            rowStride={rowStride}
+            containerStyle={{ marginTop: 12, gap: TASK_GAP }}
+            onIncompleteTaskPress={onIncompleteTaskPress}
+          />
 
           <View style={{ marginTop: 20, gap: 10 }}>
             <ProgressRail done={doneCount} total={Math.max(total, 1)} />
@@ -134,10 +150,12 @@ function LandscapeLayout(props: Props) {
 
         {/* Right column */}
         <View style={{ position: 'absolute', left: 920, top: 72 }}>
-          <StageChip stage={child.avatar_stage} name={stage} />
+          <StageChip stage={stageNum} name={stage} />
         </View>
         <View style={{ position: 'absolute', left: 706, top: 170 }}>
-          <AvatarCircle emoji={emoji} size={300} />
+          <AvatarCircle size={300}>
+            <StageAvatarImage stage={stageNum} size={300} />
+          </AvatarCircle>
         </View>
         <View style={{ position: 'absolute', left: 706, top: 620 }}>
           <StreakCard streak={child.successful_days} nextIn={Math.max(0, 7 - (child.successful_days % 7))} />
@@ -148,8 +166,9 @@ function LandscapeLayout(props: Props) {
 }
 
 function SmallPortraitLayout(props: Props & { width: number }) {
-  const { tasks, completions, child, width } = props;
-  const { doneCount, total, hour, allDone, stage, emoji, nextIn } = useCommon(props);
+  const { tasks, completions, child, width, onIncompleteTaskPress } = props;
+  const { doneCount, total, hour, allDone, stage, stageNum, emoji, nextIn } = useCommon(props);
+  const rowStride = TASK_ROW_H + 10;
   const rowW = width - 44;
 
   return (
@@ -183,11 +202,16 @@ function SmallPortraitLayout(props: Props & { width: number }) {
               </>
             )}
           </View>
-          <StageChip stage={child.avatar_stage} name={stage} compact />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <StageChip stage={stageNum} name={stage} compact />
+            <ExitLock size={32} variant="inline" />
+          </View>
         </View>
 
         <View style={{ alignItems: 'center', marginTop: 16 }}>
-          <AvatarCircle emoji={emoji} size={120} />
+          <AvatarCircle size={120}>
+            <StageAvatarImage stage={stageNum} size={120} />
+          </AvatarCircle>
         </View>
 
         <Text
@@ -202,16 +226,14 @@ function SmallPortraitLayout(props: Props & { width: number }) {
           TODAY
         </Text>
 
-        <View style={{ marginTop: 10, gap: 10 }}>
-          {tasks.map((t) => (
-            <TaskRowTile
-              key={t.id}
-              task={t}
-              completion={completions.find((c) => c.task_id === t.id) ?? null}
-              width={rowW}
-            />
-          ))}
-        </View>
+        <AnimatedTaskList
+          tasks={tasks}
+          completions={completions}
+          rowStride={rowStride}
+          rowWidth={rowW}
+          containerStyle={{ marginTop: 10, gap: 10 }}
+          onIncompleteTaskPress={onIncompleteTaskPress}
+        />
 
         <View style={{ marginTop: 20, gap: 12 }}>
           <ProgressRail done={doneCount} total={Math.max(total, 1)} width={rowW} compact />
@@ -231,8 +253,9 @@ function SmallPortraitLayout(props: Props & { width: number }) {
 }
 
 function PortraitLayout(props: Props) {
-  const { tasks, completions, child } = props;
-  const { doneCount, total, hour, allDone, stage, emoji, nextIn } = useCommon(props);
+  const { tasks, completions, child, onIncompleteTaskPress } = props;
+  const { doneCount, total, hour, allDone, stage, stageNum, emoji, nextIn } = useCommon(props);
+  const rowStride = TASK_ROW_H + 12;
 
   return (
     <View style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -266,12 +289,14 @@ function PortraitLayout(props: Props) {
               </>
             )}
           </View>
-          <StageChip stage={child.avatar_stage} name={stage} />
+          <StageChip stage={stageNum} name={stage} />
         </View>
 
         {/* Centered avatar */}
         <View style={{ alignItems: 'center', marginTop: 24 }}>
-          <AvatarCircle emoji={emoji} size={300} />
+          <AvatarCircle size={300}>
+            <StageAvatarImage stage={stageNum} size={300} />
+          </AvatarCircle>
         </View>
 
         {/* TODAY + task rows */}
@@ -287,16 +312,14 @@ function PortraitLayout(props: Props) {
           TODAY
         </Text>
 
-        <View style={{ marginTop: 12, gap: 12 }}>
-          {tasks.map((t) => (
-            <TaskRowTile
-              key={t.id}
-              task={t}
-              completion={completions.find((c) => c.task_id === t.id) ?? null}
-              width={706}
-            />
-          ))}
-        </View>
+        <AnimatedTaskList
+          tasks={tasks}
+          completions={completions}
+          rowStride={rowStride}
+          rowWidth={706}
+          containerStyle={{ marginTop: 12, gap: 12 }}
+          onIncompleteTaskPress={onIncompleteTaskPress}
+        />
 
         {/* Progress + hint + streak stack */}
         <View style={{ marginTop: 24, gap: 16 }}>

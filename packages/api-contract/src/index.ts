@@ -6,7 +6,6 @@ export * from './endpoints/dev.js';
 export * from './endpoints/families.js';
 export * from './endpoints/children.js';
 export * from './endpoints/tasks.js';
-export * from './endpoints/cosmetics.js';
 export * from './endpoints/daily-summaries.js';
 export * from './endpoints/insights.js';
 export * from './endpoints/task-completions.js';

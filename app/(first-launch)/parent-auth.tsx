@@ -67,7 +67,7 @@ export default function ParentAuth() {
         <IconTile tint="purpleWash" size={80} style={{ borderRadius: 40, marginBottom: spacing.xl }} emoji="👋" />
         <Display style={{ textAlign: 'center' }}>Let's sign you in</Display>
         <Body color="muted" style={{ textAlign: 'center', marginTop: spacing.s, maxWidth: 300 }}>
-          Parents sign in with Google.{'\n'}The kid iPad never signs in.
+          Parents sign in with Google. Kid view uses the same account — no separate kid login.
         </Body>
       </View>
 

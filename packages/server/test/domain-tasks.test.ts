@@ -10,7 +10,6 @@ const base: TaskRowLike = {
   time_slot: 'morning',
   difficulty: 1,
   is_bonus: false,
-  bonus_cosmetic_id: null,
   is_active: true,
   created_at: '2026-05-01T00:00:00Z',
 };

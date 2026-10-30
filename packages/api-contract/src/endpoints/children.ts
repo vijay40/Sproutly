@@ -8,12 +8,9 @@ export const Child = z.object({
   name: z.string(),
   age: z.number().int().nullable(),
   avatar_emoji: z.string().nullable(),
-  avatar_stage: z.number().int().min(1).max(5),
   successful_days: z.number().int(),
   last_evaluated_date: LocalDate.nullable(),
   pending_stage_transition: z.boolean(),
-  cosmetics: z.unknown(),
-  equipped_cosmetics: z.unknown(),
   created_at: Iso8601,
 });
 
@@ -26,10 +23,7 @@ export const CreateChildRequest = z
   .object({
     name: z.string().min(1),
     age: z.number().int().min(3).max(12).optional(),
-    avatar_stage: z.number().int().min(1).max(5).optional(),
     avatar_emoji: z.string().optional(),
-    cosmetics: z.unknown().optional(),
-    equipped_cosmetics: z.unknown().optional(),
   })
   .strict();
 
@@ -39,10 +33,7 @@ export const UpdateChildRequest = z
   .object({
     name: z.string().min(1).optional(),
     age: z.number().int().min(3).max(12).nullable().optional(),
-    avatar_stage: z.number().int().min(1).max(5).optional(),
     avatar_emoji: z.string().nullable().optional(),
-    cosmetics: z.unknown().optional(),
-    equipped_cosmetics: z.unknown().optional(),
   })
   .strict();
 
@@ -99,7 +90,7 @@ export function registerChildren(registry: OpenAPIRegistry): void {
           'application/json': {
             schema: UpdateChildRequest,
             examples: {
-              stage: { value: { avatar_stage: 2 } },
+              name: { value: { name: 'Alex' } },
             },
           },
         },

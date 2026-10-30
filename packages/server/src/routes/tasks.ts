@@ -111,7 +111,6 @@ export function tasksRoute(app: Hono): void {
       recurrence: body.recurrence,
       recurrence_days: body.recurrence === 'custom' ? body.recurrence_days ?? null : null,
       is_bonus: body.is_bonus ?? false,
-      bonus_cosmetic_id: body.bonus_cosmetic_id ?? null,
     };
 
     const { data, error } = await db
@@ -150,7 +149,6 @@ export function tasksRoute(app: Hono): void {
       updates.recurrence_days = body.recurrence_days;
     }
     if (body.is_bonus !== undefined) updates.is_bonus = body.is_bonus;
-    if (body.bonus_cosmetic_id !== undefined) updates.bonus_cosmetic_id = body.bonus_cosmetic_id;
 
     if (Object.keys(updates).length === 0) {
       return c.json(Task.parse(existing));

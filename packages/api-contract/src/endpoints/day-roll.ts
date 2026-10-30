@@ -2,7 +2,13 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 import { LocalDate, Uuid } from '../schemas/common.js';
 
-export const DayRollRequest = z.object({ child_id: Uuid.optional() }).strict();
+export const DayRollRequest = z
+  .object({
+    child_id: Uuid.optional(),
+    evaluate_today: z.boolean().optional(),
+    clear_pending_stage_transition: z.boolean().optional(),
+  })
+  .strict();
 
 export type DayRollRequest = z.infer<typeof DayRollRequest>;
 
@@ -13,7 +19,7 @@ export const DayRollSummary = z.object({
   completed_tasks: z.number().int(),
   was_successful: z.boolean(),
   stage_bumped: z.boolean(),
-  new_avatar_stage: z.number().int(),
+  new_stage: z.number().int(),
   miss_simplify_draft_id: Uuid.nullable(),
 });
 
@@ -32,7 +38,7 @@ export function registerDayRoll(registry: OpenAPIRegistry): void {
   registry.registerPath({
     method: 'post',
     path: '/day-roll',
-    summary: 'Run lazy day-roll catch-up through yesterday (server timezone authority)',
+    summary: 'Run lazy day-roll catch-up through yesterday; optional evaluate_today for same-day evolution',
     security: [{ bearerAuth: [] }],
     request: {
       body: { content: { 'application/json': { schema: DayRollRequest } } },

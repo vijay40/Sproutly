@@ -1,10 +1,9 @@
-import { View, Pressable } from 'react-native';
+import { View, Pressable, Text as RNText } from 'react-native';
 import { ReactNode } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors, radii, spacing } from '../theme/tokens';
-import { BodyEmphasis } from './Text';
 import { HomeIcon, ClipIcon, ChartIcon, GearIcon } from './icons';
 import { Fab } from './Fab';
 import { tapLight } from '../lib/haptics';
@@ -110,17 +109,25 @@ function SlotButton({ label, active, onPress, icon }: SlotProps) {
       accessibilityState={{ selected: active }}
       style={{
         flex: 1,
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
-        paddingVertical: 8,
+        gap: 4,
+        paddingVertical: 6,
+        paddingHorizontal: 4,
       }}
     >
       {icon(color)}
-      {active ? (
-        <BodyEmphasis color="purple">{label}</BodyEmphasis>
-      ) : null}
+      <RNText
+        numberOfLines={1}
+        style={{
+          fontSize: 11,
+          color,
+          fontFamily: active ? 'LexendDeca-SemiBold' : 'LexendDeca-Medium',
+        }}
+      >
+        {label}
+      </RNText>
     </Pressable>
   );
 }

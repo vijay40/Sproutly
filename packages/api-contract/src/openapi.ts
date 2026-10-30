@@ -5,7 +5,6 @@ import {
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 import { registerChildren } from './endpoints/children.js';
-import { registerCosmetics } from './endpoints/cosmetics.js';
 import { registerDailySummaries } from './endpoints/daily-summaries.js';
 import { registerDev } from './endpoints/dev.js';
 import { registerFamilies } from './endpoints/families.js';
@@ -33,7 +32,6 @@ export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV31['generate
   registerFamilies(registry);
   registerChildren(registry);
   registerTasks(registry);
-  registerCosmetics(registry);
   registerDailySummaries(registry);
   registerInsights(registry);
   registerTaskCompletions(registry);

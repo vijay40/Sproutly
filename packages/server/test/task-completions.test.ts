@@ -2,7 +2,11 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../src/app.js';
 import { setDbForTests } from '../src/db/client.js';
-import { createTaskCompletion, listTaskCompletions } from '../src/services/task-completions.js';
+import {
+  createTaskCompletion,
+  deleteTaskCompletion,
+  listTaskCompletions,
+} from '../src/services/task-completions.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const secret = 'tc-test-secret';
@@ -180,6 +184,80 @@ describe('createTaskCompletion (service)', () => {
     const second = await createTaskCompletion(db, ctx, { task_id: taskId, child_id: childId }, fixedNow);
     expect(second.idempotent).toBe(true);
     expect(second.completion.id).toBe(existing.id);
+  });
+});
+
+describe('deleteTaskCompletion (service)', () => {
+  const cmpId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+
+  it('forbids deleting a completion in another family', async () => {
+    const db = {
+      from(table: string) {
+        if (table === 'task_completions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: { id: cmpId, child: { family_id: 'other-family' } },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    } as unknown as SupabaseClient;
+    await expect(deleteTaskCompletion(db, ctx, cmpId)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('returns deleted=true when the row exists and family matches', async () => {
+    let deleteCalled = false;
+    const db = {
+      from(table: string) {
+        if (table === 'task_completions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: { id: cmpId, child: { family_id: famId } },
+                  error: null,
+                }),
+              }),
+            }),
+            delete: () => ({
+              eq: async () => {
+                deleteCalled = true;
+                return { error: null };
+              },
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    } as unknown as SupabaseClient;
+    const out = await deleteTaskCompletion(db, ctx, cmpId);
+    expect(out.deleted).toBe(true);
+    expect(deleteCalled).toBe(true);
+  });
+
+  it('returns deleted=false when nothing matched', async () => {
+    const db = {
+      from(table: string) {
+        if (table === 'task_completions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({ data: null, error: null }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    } as unknown as SupabaseClient;
+    const out = await deleteTaskCompletion(db, ctx, cmpId);
+    expect(out.deleted).toBe(false);
   });
 });
 

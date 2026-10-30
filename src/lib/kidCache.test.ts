@@ -14,7 +14,7 @@ function memStorage(): KidCacheStorage & { _m: Map<string, string> } {
 const SAMPLE: KidCachePayload = {
   tasks: [],
   completions: [],
-  child: { id: 'c1', family_id: 'f1', name: 'A', age: 8, avatar_emoji: null, avatar_stage: 3, successful_days: 12, last_evaluated_date: null, pending_stage_transition: false, cosmetics: [], equipped_cosmetics: {}, created_at: '' } as never,
+  child: { id: 'c1', family_id: 'f1', name: 'A', age: 8, avatar_emoji: null, successful_days: 12, last_evaluated_date: null, pending_stage_transition: false, created_at: '' } as never,
   family: { id: 'f1', parent_user_id: null, timezone: 'America/New_York', created_at: '' } as never,
   lastCompletedAt: '2026-05-09T14:00:00Z',
 };

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { colors, spacing } from '../../src/theme/tokens';
 import { BodyEmphasis, Caption, IconTile, Text } from '../../src/ui';
 import { tapLight } from '../../src/lib/haptics';
+import { enterKidView } from '../../src/lib/mode';
 
 interface Props {
   greeting: string;
@@ -35,7 +36,10 @@ export function TodayTopHeader({ greeting }: Props) {
         <Pressable
           onPress={() => {
             tapLight();
-            router.push('/(kid)/display');
+            void (async () => {
+              await enterKidView();
+              router.push('/(kid)/display');
+            })();
           }}
           accessibilityRole="button"
           accessibilityLabel="Kid view"

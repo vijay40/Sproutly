@@ -10,6 +10,7 @@ import {
   Card,
   DangerButton,
   Display,
+  EmojiPickerSheet,
   IconTile,
   Icons,
   InputField,
@@ -43,13 +44,14 @@ export default function TaskEdit() {
   const editing = !!id;
 
   const [title, setTitle] = useState('');
-  const [icon, setIcon] = useState('');
+  const [icon, setIcon] = useState('🌱');
   const [slot, setSlot] = useState<TimeSlot>('morning');
   const [recurrence, setRecurrence] = useState<Recurrence>('daily');
   const [days, setDays] = useState<number[]>([]);
   const [isBonus, setIsBonus] = useState(false);
   const [childId, setChildId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -107,19 +109,19 @@ export default function TaskEdit() {
     router.back();
   }
 
-  function remove() {
+  function archive() {
     if (!editing) return;
-    Alert.alert('Delete task?', 'This will deactivate it.', [
+    Alert.alert('Archive task?', 'It will stop appearing in the daily list.', [
       { text: 'Cancel' },
       {
-        text: 'Delete',
+        text: 'Archive',
         style: 'destructive',
         onPress: async () => {
           try {
             await api.tasks.softDelete(String(id));
             router.back();
           } catch {
-            Alert.alert('Error', 'Could not delete task');
+            Alert.alert('Error', 'Could not archive task');
           }
         },
       },
@@ -139,20 +141,21 @@ export default function TaskEdit() {
 
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
           <Pressable
-            onPress={() =>
-              Alert.prompt?.('Icon', 'Enter an emoji', (v: string | undefined) => setIcon(v ?? ''))
-            }
+            onPress={() => {
+              tapLight();
+              setEmojiPickerOpen(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Change task icon"
           >
-            <IconTile tint="sky" size={44} emoji={icon || '•'} />
+            <IconTile tint="sky" size={44} emoji={icon || '🌱'} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Caption>Title</Caption>
-            <BodyEmphasis>{title || 'Untitled task'}</BodyEmphasis>
             <InputField
+              label="TITLE"
               value={title}
               onChangeText={setTitle}
               placeholder="What needs to be done?"
-              style={{ marginTop: spacing.s }}
             />
           </View>
         </Card>
@@ -199,7 +202,7 @@ export default function TaskEdit() {
           <Toggle value={isBonus} onChange={(v) => { tapLight(); setIsBonus(v); }} accessibilityLabel="Bonus task" />
         </Card>
 
-        {editing && <DangerButton title="Delete task" fullWidth onPress={remove} style={{ marginBottom: spacing.md }} />}
+        {editing && <DangerButton title="Archive task" fullWidth onPress={archive} style={{ marginBottom: spacing.md }} />}
 
         <View style={{ flex: 1 }} />
 
@@ -211,6 +214,14 @@ export default function TaskEdit() {
           onPress={() => void save()}
         />
       </Screen>
+
+      <EmojiPickerSheet
+        kind="task"
+        visible={emojiPickerOpen}
+        value={icon || null}
+        onSelect={(v) => setIcon(v)}
+        onClose={() => setEmojiPickerOpen(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

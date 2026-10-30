@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   STAGE_THRESHOLDS,
   computeDayRoll,
-  computeStageAfterSuccess,
   datesBetween,
+  stageFromSuccessfulDays,
   targetStageFromSuccessfulDays,
   wasSuccessful,
   worstTimeSlotForMiss,
@@ -52,12 +52,12 @@ describe('datesBetween', () => {
   });
 });
 
-describe('computeStageAfterSuccess', () => {
-  it('bumps at 7 from stage 1', () => {
-    expect(computeStageAfterSuccess(1, 7)).toEqual({ stage: 2, bumped: true });
-  });
-  it('no bump at 8 when already stage 2', () => {
-    expect(computeStageAfterSuccess(2, 8)).toEqual({ stage: 2, bumped: false });
+describe('stageFromSuccessfulDays', () => {
+  it('maps streak to stage 1–5', () => {
+    expect(stageFromSuccessfulDays(6)).toBe(1);
+    expect(stageFromSuccessfulDays(7)).toBe(2);
+    expect(stageFromSuccessfulDays(14)).toBe(3);
+    expect(stageFromSuccessfulDays(30)).toBe(5);
   });
 });
 
@@ -80,7 +80,7 @@ describe('worstTimeSlotForMiss', () => {
 });
 
 describe('computeDayRoll', () => {
-  const childBase = { avatar_stage: 1, successful_days: 0, pending_stage_transition: false };
+  const childBase = { successful_days: 0, pending_stage_transition: false };
 
   it('happy path 4 scheduled 3 completed', () => {
     const tasks = [
@@ -103,6 +103,24 @@ describe('computeDayRoll', () => {
     expect(r.was_successful).toBe(true);
     expect(r.next_successful_days).toBe(1);
     expect(r.missSimplifyDraft).toBeUndefined();
+  });
+
+  it('threshold day bumps stage from successful_days', () => {
+    const tasks = [
+      { id: '1', time_slot: 'morning', is_bonus: false, is_active: true },
+    ];
+    const comps = [{ task_id: '1', id: 'c1' }];
+    const r = computeDayRoll({
+      date: '2026-05-10',
+      tasksScheduled: tasks,
+      completionsForDate: comps,
+      child: { successful_days: 6, pending_stage_transition: false },
+    });
+    expect(r.was_successful).toBe(true);
+    expect(r.next_successful_days).toBe(7);
+    expect(r.next_stage).toBe(2);
+    expect(r.stage_bumped).toBe(true);
+    expect(r.next_pending_stage_transition).toBe(true);
   });
 
   it('miss path emits draft', () => {

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { api } from '../../src/lib/api';
+import { recurrenceLabel } from '../../src/lib/recurrence';
 import { tapLight } from '../../src/lib/haptics';
 import type { TaskRow as TaskRowType, TimeSlot } from '../../src/types/db';
 import {
@@ -25,18 +26,9 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'bonus', label: 'Bonus' },
 ];
 
-function recurrenceLabel(t: TaskRowType): string {
-  switch (t.recurrence) {
-    case 'daily': return 'Daily';
-    case 'weekdays': return 'Weekdays';
-    case 'one_time': return 'Once';
-    case 'custom': return 'Custom';
-  }
-}
-
 function timeLabel(t: TaskRowType): string {
   const slot = t.time_slot.charAt(0).toUpperCase() + t.time_slot.slice(1);
-  return `${slot} · ${recurrenceLabel(t).toLowerCase()}`;
+  return `${slot} · ${recurrenceLabel(t)}`;
 }
 
 export default function TasksScreen() {

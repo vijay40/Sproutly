@@ -180,10 +180,6 @@ paths:
                       type:
                         - string
                         - "null"
-                    avatar_stage:
-                      type: integer
-                      minimum: 1
-                      maximum: 5
                     successful_days:
                       type: integer
                     last_evaluated_date:
@@ -193,8 +189,6 @@ paths:
                       pattern: ^\d{4}-\d{2}-\d{2}$
                     pending_stage_transition:
                       type: boolean
-                    cosmetics: {}
-                    equipped_cosmetics: {}
                     created_at:
                       type: string
                       format: date-time
@@ -204,7 +198,6 @@ paths:
                     - name
                     - age
                     - avatar_emoji
-                    - avatar_stage
                     - successful_days
                     - last_evaluated_date
                     - pending_stage_transition
@@ -226,14 +219,8 @@ paths:
                   type: integer
                   minimum: 3
                   maximum: 12
-                avatar_stage:
-                  type: integer
-                  minimum: 1
-                  maximum: 5
                 avatar_emoji:
                   type: string
-                cosmetics: {}
-                equipped_cosmetics: {}
               required:
                 - name
               additionalProperties: false
@@ -266,10 +253,6 @@ paths:
                     type:
                       - string
                       - "null"
-                  avatar_stage:
-                    type: integer
-                    minimum: 1
-                    maximum: 5
                   successful_days:
                     type: integer
                   last_evaluated_date:
@@ -279,8 +262,6 @@ paths:
                     pattern: ^\d{4}-\d{2}-\d{2}$
                   pending_stage_transition:
                     type: boolean
-                  cosmetics: {}
-                  equipped_cosmetics: {}
                   created_at:
                     type: string
                     format: date-time
@@ -290,7 +271,6 @@ paths:
                   - name
                   - age
                   - avatar_emoji
-                  - avatar_stage
                   - successful_days
                   - last_evaluated_date
                   - pending_stage_transition
@@ -322,21 +302,15 @@ paths:
                     - "null"
                   minimum: 3
                   maximum: 12
-                avatar_stage:
-                  type: integer
-                  minimum: 1
-                  maximum: 5
                 avatar_emoji:
                   type:
                     - string
                     - "null"
-                cosmetics: {}
-                equipped_cosmetics: {}
               additionalProperties: false
             examples:
-              stage:
+              name:
                 value:
-                  avatar_stage: 2
+                  name: Alex
       responses:
         "200":
           description: OK
@@ -361,10 +335,6 @@ paths:
                     type:
                       - string
                       - "null"
-                  avatar_stage:
-                    type: integer
-                    minimum: 1
-                    maximum: 5
                   successful_days:
                     type: integer
                   last_evaluated_date:
@@ -374,8 +344,6 @@ paths:
                     pattern: ^\d{4}-\d{2}-\d{2}$
                   pending_stage_transition:
                     type: boolean
-                  cosmetics: {}
-                  equipped_cosmetics: {}
                   created_at:
                     type: string
                     format: date-time
@@ -385,7 +353,6 @@ paths:
                   - name
                   - age
                   - avatar_emoji
-                  - avatar_stage
                   - successful_days
                   - last_evaluated_date
                   - pending_stage_transition
@@ -448,10 +415,6 @@ paths:
                         type: integer
                     is_bonus:
                       type: boolean
-                    bonus_cosmetic_id:
-                      type:
-                        - string
-                        - "null"
                     is_active:
                       type: boolean
                     created_at:
@@ -468,7 +431,6 @@ paths:
                     - recurrence
                     - recurrence_days
                     - is_bonus
-                    - bonus_cosmetic_id
                     - is_active
                     - created_at
     post:
@@ -518,10 +480,6 @@ paths:
                     type: integer
                 is_bonus:
                   type: boolean
-                bonus_cosmetic_id:
-                  type:
-                    - string
-                    - "null"
               required:
                 - child_id
                 - title
@@ -570,10 +528,6 @@ paths:
                       type: integer
                   is_bonus:
                     type: boolean
-                  bonus_cosmetic_id:
-                    type:
-                      - string
-                      - "null"
                   is_active:
                     type: boolean
                   created_at:
@@ -590,7 +544,6 @@ paths:
                   - recurrence
                   - recurrence_days
                   - is_bonus
-                  - bonus_cosmetic_id
                   - is_active
                   - created_at
   /tasks/{id}:
@@ -645,10 +598,6 @@ paths:
                     type: integer
                 is_bonus:
                   type: boolean
-                bonus_cosmetic_id:
-                  type:
-                    - string
-                    - "null"
               additionalProperties: false
       responses:
         "200":
@@ -691,10 +640,6 @@ paths:
                       type: integer
                   is_bonus:
                     type: boolean
-                  bonus_cosmetic_id:
-                    type:
-                      - string
-                      - "null"
                   is_active:
                     type: boolean
                   created_at:
@@ -711,7 +656,6 @@ paths:
                   - recurrence
                   - recurrence_days
                   - is_bonus
-                  - bonus_cosmetic_id
                   - is_active
                   - created_at
     delete:
@@ -766,10 +710,6 @@ paths:
                       type: integer
                   is_bonus:
                     type: boolean
-                  bonus_cosmetic_id:
-                    type:
-                      - string
-                      - "null"
                   is_active:
                     type: boolean
                   created_at:
@@ -786,41 +726,8 @@ paths:
                   - recurrence
                   - recurrence_days
                   - is_bonus
-                  - bonus_cosmetic_id
                   - is_active
                   - created_at
-  /cosmetics:
-    get:
-      summary: List cosmetics catalog
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    name:
-                      type: string
-                    type:
-                      type: string
-                      enum:
-                        - horn
-                        - mane
-                        - background
-                    asset_path:
-                      type: string
-                  required:
-                    - id
-                    - name
-                    - type
-                    - asset_path
   /daily-summaries:
     get:
       summary: List daily summaries for a child
@@ -1131,9 +1038,33 @@ paths:
                     - local_date
                     - completed_at
                     - marked_by_parent
+  /task-completions/{id}:
+    delete:
+      summary: Undo a task completion by id (parent only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: id
+          in: path
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                required:
+                  - deleted
   /day-roll:
     post:
-      summary: Run lazy day-roll catch-up through yesterday (server timezone authority)
+      summary: Run lazy day-roll catch-up through yesterday; optional evaluate_today for same-day evolution
       security:
         - bearerAuth: []
       requestBody:
@@ -1145,6 +1076,10 @@ paths:
                 child_id:
                   type: string
                   format: uuid
+                evaluate_today:
+                  type: boolean
+                clear_pending_stage_transition:
+                  type: boolean
               additionalProperties: false
       responses:
         "200":
@@ -1178,7 +1113,7 @@ paths:
                           type: boolean
                         stage_bumped:
                           type: boolean
-                        new_avatar_stage:
+                        new_stage:
                           type: integer
                         miss_simplify_draft_id:
                           type:
@@ -1192,7 +1127,7 @@ paths:
                         - completed_tasks
                         - was_successful
                         - stage_bumped
-                        - new_avatar_stage
+                        - new_stage
                         - miss_simplify_draft_id
                   reason:
                     type: string

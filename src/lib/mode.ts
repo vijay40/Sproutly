@@ -15,3 +15,11 @@ export async function setMode(mode: AppMode): Promise<void> {
 export async function clearMode(): Promise<void> {
   await AsyncStorage.removeItem(KEY);
 }
+
+export async function enterKidView(): Promise<void> {
+  await setMode('kid');
+}
+
+export async function exitKidView(): Promise<void> {
+  await setMode('parent');
+}

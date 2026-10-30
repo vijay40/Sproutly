@@ -12,6 +12,8 @@ export default function ParentLayout() {
       <Tabs.Screen name="insights" options={{ title: 'Insights' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
       <Tabs.Screen name="task-edit" options={{ href: null }} />
+      <Tabs.Screen name="pin-settings" options={{ href: null }} />
+      <Tabs.Screen name="edit-profile" options={{ href: null }} />
     </Tabs>
   );
 }

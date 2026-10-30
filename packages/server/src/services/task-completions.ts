@@ -91,6 +91,37 @@ export async function createTaskCompletion(
   throw new ApiError('INTERNAL', insErr?.message ?? 'Failed to insert completion');
 }
 
+export async function deleteTaskCompletion(
+  db: SupabaseClient,
+  ctx: RequestCtx & { family_id: string },
+  id: string,
+): Promise<{ deleted: boolean }> {
+  // Fetch + family-scope check via the FK chain:
+  // task_completions → children.family_id
+  const { data: row, error: selErr } = await db
+    .from('task_completions')
+    .select('id, child:children!inner(family_id)')
+    .eq('id', id)
+    .maybeSingle();
+  if (selErr) {
+    throw new ApiError('INTERNAL', 'Failed to load completion');
+  }
+  if (!row) {
+    return { deleted: false };
+  }
+  const child = (row as { child: { family_id: string } | { family_id: string }[] }).child;
+  const familyId = Array.isArray(child) ? child[0]?.family_id : child?.family_id;
+  if (familyId !== ctx.family_id) {
+    throw new ApiError('FORBIDDEN', 'Completion does not belong to your family');
+  }
+
+  const { error: delErr } = await db.from('task_completions').delete().eq('id', id);
+  if (delErr) {
+    throw new ApiError('INTERNAL', delErr.message ?? 'Failed to delete completion');
+  }
+  return { deleted: true };
+}
+
 export async function listTaskCompletions(
   db: SupabaseClient,
   ctx: RequestCtx & { family_id: string; timezone: string | null },
@@ -98,7 +129,17 @@ export async function listTaskCompletions(
   now: Date,
 ): Promise<TaskCompletion[]> {
   const tz = ctx.timezone ?? 'UTC';
-  const localDate = req.local_date ?? todayYmdInTz(tz, now);
+  const computedToday = todayYmdInTz(tz, now);
+  const localDate = req.local_date ?? computedToday;
+  // eslint-disable-next-line no-console
+  console.log('[list-completions]', {
+    tz,
+    nowIso: now.toISOString(),
+    computedToday,
+    reqLocalDate: req.local_date,
+    used: localDate,
+    icu: process.versions.icu,
+  });
 
   const { data: child, error: cErr } = await db
     .from('children')
